@@ -29,7 +29,7 @@ def _usd(c: Contract, inv: Invoice, amount: Decimal) -> Decimal | None:
     if inv.currency == "USD":
         return amount
     fx, _ = fx_rate(c, inv.date.strftime("%Y-%m"))
-    return amount / fx if fx else None
+    return cents(amount / fx) if fx else None
 
 
 def _spend(w: World, c: Contract, start: date, end: date) -> Decimal | None:

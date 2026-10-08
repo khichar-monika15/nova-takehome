@@ -116,3 +116,30 @@ def test_risk_principal_leaves_out_what_we_dispute_on_the_invoice():
     risk = [c for c in late_fees.run(w, disputes) if c.cls == "late_fee_risk"]
     # 1.98% x (1937.33 - 196.92) = 34.46
     assert [c.amount for c in risk] == [Decimal("34.46")]
+
+
+def test_inr_spend_converts_per_invoice_rounded_to_cents():
+    base = msa(currency="INR", effective_date="2030-01-12", end_date="2032-01-11",
+               improvement_credit={"applies": True, "pct": "0.83", "due_days_after_anniversary": "60",
+                                   "clause": clause("9.1 Annual improvement credit 0.83%", 4)})
+    base["facts"]["tables"]["fx"] = [{"month": "2030-03", "inr_per_usd": "89.59", **clause("2030-03 89.59", 11)},
+                                     {"month": "2030-08", "inr_per_usd": "87.97", **clause("2030-08 87.97", 11)}]
+    a = invoice("IN-1", "2030-03-10", [line("S1", "2030-03-08", "Air freight", "AAA-BBB", "1", "kg", "54710.92",
+                                            "54710.92")], currency="INR")
+    b = invoice("IN-2", "2030-08-10", [line("S2", "2030-08-08", "Air freight", "AAA-BBB", "1", "kg", "90556.09",
+                                            "90556.09")], currency="INR")
+    got = cashback.run(build([base, a, b], date(2031, 2, 28)))
+    # 610.68 + 1029.40 = 1640.08 USD; 0.83% = 13.61
+    assert [(c.period, c.credit_type, c.amount) for c in got] == [("CY1", "promised_credit", Decimal("13.61"))]
+
+
+def test_inr_spend_total_is_the_sum_of_per_invoice_rounded_usd():
+    base = msa(currency="INR", effective_date="2030-01-12")
+    base["facts"]["tables"]["fx"] = [{"month": "2030-03", "inr_per_usd": "89.59", **clause("2030-03 89.59", 11)},
+                                     {"month": "2030-08", "inr_per_usd": "87.97", **clause("2030-08 87.97", 11)}]
+    a = invoice("IN-1", "2030-03-10", [line("S1", "2030-03-08", "Air freight", "AAA-BBB", "1", "kg", "54710.92",
+                                            "54710.92")], currency="INR")
+    b = invoice("IN-2", "2030-08-10", [line("S2", "2030-08-08", "Air freight", "AAA-BBB", "1", "kg", "90556.09",
+                                            "90556.09")], currency="INR")
+    w = build([base, a, b], date(2031, 2, 28))
+    assert cashback._spend(w, w.contracts["C-1"], date(2030, 1, 12), date(2031, 1, 11)) == Decimal("1640.08")

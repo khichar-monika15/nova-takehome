@@ -97,7 +97,10 @@ printed for that line. qty and unit: chargeable kg, number of shipments, days, m
 (such as fuel) qty is the base amount it is charged on, rate is the percent and unit is percent_of_base. amount is \
 the line amount (negative for a credit). For a late-fee line, refers_to_invoice is the invoice it charges a fee on. \
 refers_to_period is the month or period a line or a credit covers, when printed.
-- credit: for a credit note, which invoice or period it credits and what kind of credit it is.""",
+- credit: for a credit note, which invoice or period it credits (a quarter as YYYY-Qn, a contract year as CYn) and \
+what kind: rebate (a quarterly volume rebate), margin_step_down (a handling margin that stepped down), \
+promised_credit (an annual improvement credit or any other credit the contract promises), billing_correction (a \
+credit for a billing error or a disputed charge), other.""",
 
     "awb": """This is an air waybill. Extract the shipment number, the execution date, origin and destination, \
 pieces, actual and chargeable weight, the master shipment number for a house waybill (or the house numbers on a \
