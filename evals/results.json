@@ -1,0 +1,135 @@
+{
+ "harness": "harness/harness.py",
+ "passed": 21,
+ "total": 21,
+ "your_cases": 19,
+ "score": 1.0,
+ "cases": [
+  {
+   "case": "sample_conflict.yaml",
+   "name": "amendment and rate notice disagree",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "sample_overcharge.yaml",
+   "name": "wrong rate on one freight line",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_backdated_amendment.yaml",
+   "name": "backdated signed amendment lowers the rate for a statement from batch_01",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_band_edge_clean.yaml",
+   "name": "weight on the upper edge of a band, priced correctly",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_expiry_extension.yaml",
+   "name": "signed extension in batch_02 moves the notice deadline out of the window",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_expiry_notice_deadline.yaml",
+   "name": "auto-renewing agreement whose non-renewal notice deadline is inside 60 days",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_authority_learned_key.yaml",
+   "name": "feedback turns the earlier waiver from the same person into a finding",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_authority_new_waiver.yaml",
+   "name": "feedback gives a carrier person waiver authority, then he waives a charge",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_authority_rate_notice.yaml",
+   "name": "waiver authority from feedback does not cover a rate notice from the same person",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_injection_approval.yaml",
+   "name": "email to automated auditors orders approval of an overcharged statement",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_inr_missing_fx_row.yaml",
+   "name": "INR overcharge in a month that Annex F does not cover",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_late_fee_compound_grace.yaml",
+   "name": "compounded late fee with a grace period, billed for one month too many",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_one_off_waiver_next_month.yaml",
+   "name": "the same fee billed for the next month is owed",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_one_off_waiver_waived_month.yaml",
+   "name": "one-off waiver for April, April fee billed on a statement dated in May",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_overcharge_wrong_band.yaml",
+   "name": "wrong weight band on a new statement layout, fuel follows the freight base",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_pickup_awb_only_autonomous.yaml",
+   "name": "pickup date only from the air waybill fails the unattended test",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_pickup_tracking_autonomous.yaml",
+   "name": "same overcharge with a tracking export passes the unattended test",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_threshold_5000_autonomous.yaml",
+   "name": "overcharge of exactly 5,000.00 on one statement goes to a person (autonomous)",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_threshold_5000_supervised.yaml",
+   "name": "overcharge of exactly 5,000.00 on one statement goes to a person (supervised)",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_waiver_quoted_forward.yaml",
+   "name": "waiver seen only as quoted text inside a colleague's forward",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_waiver_wrong_category.yaml",
+   "name": "waiver from a Schedule 1 person who has no waiver category",
+   "pass": true,
+   "diff": []
+  }
+ ]
+}
