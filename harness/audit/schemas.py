@@ -1,5 +1,6 @@
-"""JSON schemas for each extraction call. Every object is closed and lists every field as required, because
-structured output needs that; a value the document does not state comes back as null."""
+"""JSON schemas for each extraction call. Every object is closed, every field is required and has one type, because
+Claude's structured output allows few optional or union-type fields per request. A value the document does not state
+comes back as an empty string, -1 for a column index, "none" for a choice, or an empty quote with page 0."""
 from __future__ import annotations
 
 
@@ -12,16 +13,14 @@ def arr(item: dict) -> dict:
 
 
 def enum(*values: str, nullable: bool = False) -> dict:
-    if nullable:
-        return {"anyOf": [{"type": "string", "enum": list(values)}, {"type": "null"}]}
-    return {"type": "string", "enum": list(values)}
+    return {"type": "string", "enum": [*values, "none"] if nullable else list(values)}
 
 
 STR = {"type": "string"}
-NSTR = {"type": ["string", "null"]}
+NSTR = STR
 BOOL = {"type": "boolean"}
 INT = {"type": "integer"}
-NINT = {"type": ["integer", "null"]}
+NINT = INT
 
 
 def cited(**props) -> dict:
@@ -29,7 +28,7 @@ def cited(**props) -> dict:
     return obj(**props, quote=STR, page=INT)
 
 
-CLAUSE = {"anyOf": [cited(), {"type": "null"}]}
+CLAUSE = cited()
 
 DOC_KINDS = ("contract", "invoice", "awb", "dgd", "table", "other")
 

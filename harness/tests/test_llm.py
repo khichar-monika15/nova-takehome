@@ -136,3 +136,33 @@ def test_dev_cache_written_by_one_provider_is_read_by_the_other(monkeypatch, tmp
     monkeypatch.delenv("OPENAI_API_KEY")
     monkeypatch.setattr(llm, "_client", lambda: (_ for _ in ()).throw(AssertionError("no network expected")))
     assert llm.call_json("t", "sys", content, SCHEMA, state_dir=tmp_path / "s2") == {"a": 9}
+
+
+
+class RejectsSchema(FakeClient):
+    def create(self, **kw):
+        self.calls.append(kw)
+        if "format" in kw.get("output_config", {}):
+            err = RuntimeError("Schema is too complex for compilation")
+            err.status_code = 400
+            raise err
+        return SimpleNamespace(stop_reason="end_turn", model=kw["model"],
+                               content=[SimpleNamespace(type="text", text='Here it is:\n```json\n{"a": 5}\n```')],
+                               usage=SimpleNamespace(input_tokens=1, output_tokens=1, cache_read_input_tokens=0))
+
+
+def test_a_rejected_schema_falls_back_to_plain_json_in_the_prompt(monkeypatch, tmp_path):
+    fake = RejectsSchema([])
+    use(monkeypatch, fake)
+    assert llm.call_json("t", "sys", [{"type": "text", "text": "q"}], SCHEMA, state_dir=tmp_path) == {"a": 5}
+    plain = fake.calls[-1]
+    assert "format" not in plain.get("output_config", {})
+    assert '"required": ["a"]' in plain["messages"][0]["content"][-1]["text"]
+
+
+def test_no_call_is_started_when_the_deadline_is_too_close(monkeypatch, tmp_path):
+    fake = FakeClient([("end_turn", '{"a": 1}')])
+    use(monkeypatch, fake)
+    assert llm.call_json("t", "sys", [{"type": "text", "text": "late"}], SCHEMA, state_dir=tmp_path,
+                         deadline=time.monotonic() + 5) is None
+    assert fake.calls == []

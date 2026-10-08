@@ -29,3 +29,18 @@ def test_every_kind_has_a_schema_and_a_prompt():
                  "dgd", "table"):
         assert kind in schemas.ALL
         assert kind in prompts.TASK
+
+
+def union_fields(node) -> int:
+    if isinstance(node, dict):
+        own = 1 if ("anyOf" in node or isinstance(node.get("type"), list)) else 0
+        return own + sum(union_fields(v) for v in node.values())
+    if isinstance(node, list):
+        return sum(union_fields(v) for v in node)
+    return 0
+
+
+@pytest.mark.parametrize("name", sorted(schemas.ALL))
+def test_schema_has_no_union_types_for_the_claude_compiler_limit(name):
+    # Claude structured outputs allow at most 16 union-type parameters per request (anyOf or type arrays).
+    assert union_fields(schemas.ALL[name]) == 0

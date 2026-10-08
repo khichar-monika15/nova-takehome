@@ -16,7 +16,8 @@ from pathlib import Path
 MODEL = "claude-opus-5-5"
 FALLBACK_MODEL = "claude-sonnet-5-5"
 SMALL_MODEL = "claude-haiku-5-5"
-REQUEST_TIMEOUT_S = 300
+REQUEST_TIMEOUT_S = 240
+MIN_CALL_S = 30
 OPENAI_MODELS = {MODEL: "gpt-5.5", FALLBACK_MODEL: "gpt-5.5", SMALL_MODEL: "gpt-5.4-mini"}
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -36,7 +37,7 @@ def _client():
     global _shared
     if _shared is None:
         import anthropic
-        _shared = anthropic.Anthropic(max_retries=2, timeout=REQUEST_TIMEOUT_S)
+        _shared = anthropic.Anthropic(max_retries=1, timeout=REQUEST_TIMEOUT_S)
     return _shared
 
 
@@ -44,7 +45,7 @@ def _openai_client():
     global _shared_openai
     if _shared_openai is None:
         import openai
-        _shared_openai = openai.OpenAI(max_retries=2, timeout=REQUEST_TIMEOUT_S)
+        _shared_openai = openai.OpenAI(max_retries=1, timeout=REQUEST_TIMEOUT_S)
     return _shared_openai
 
 
@@ -93,28 +94,53 @@ def _log_usage(state_dir: Path, task: str, resp, seconds: float) -> None:
         f.write(json.dumps(row) + "\n")
 
 
+def _with_timeout(client, timeout: float | None):
+    return client.with_options(timeout=timeout) if timeout and hasattr(client, "with_options") else client
+
+
+def _json_in(text: str):
+    """The JSON object in a reply that may wrap it in prose or a code fence."""
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end < start:
+        return None
+    try:
+        value = json.loads(text[start:end + 1])
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
 def _ask(model: str, system: str, content: list, schema: dict, max_tokens: int, effort: str, task: str,
-         state_dir: Path):
+         state_dir: Path, timeout: float | None = None):
+    client = _with_timeout(_client(), timeout)
     t0 = time.monotonic()
-    resp = _client().messages.create(
-        model=model, max_tokens=max_tokens, system=system,
-        messages=[{"role": "user", "content": content}],
-        output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
-    )
+    try:
+        resp = client.messages.create(
+            model=model, max_tokens=max_tokens, system=system,
+            messages=[{"role": "user", "content": content}],
+            output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
+        )
+    except Exception as e:
+        if getattr(e, "status_code", None) != 400:
+            raise
+        # The API refused the request shape (for example a schema it cannot compile): ask for plain JSON instead.
+        print(f"llm {task}: structured output refused ({e}); asking for plain JSON", file=sys.stderr)
+        plain = content + [{"type": "text", "text": "Return only one JSON object, with no other text, that matches "
+                                                    f"this JSON schema:\n{json.dumps(schema)}"}]
+        resp = client.messages.create(model=model, max_tokens=max_tokens, system=system,
+                                      messages=[{"role": "user", "content": plain}],
+                                      output_config={"effort": effort})
     _log_usage(state_dir, task, resp, time.monotonic() - t0)
     if resp.stop_reason == "refusal":
         return None
     text = next((b.text for b in resp.content if getattr(b, "type", "") == "text"), "")
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        return None
+    return _json_in(text)
 
 
 def _ask_openai(model: str, system: str, content: list, schema: dict, max_tokens: int, effort: str, task: str,
-                state_dir: Path):
+                state_dir: Path, timeout: float | None = None):
     t0 = time.monotonic()
-    resp = _openai_client().chat.completions.create(
+    resp = _with_timeout(_openai_client(), timeout).chat.completions.create(
         model=model, max_completion_tokens=max_tokens, reasoning_effort=effort,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": _openai_content(content)}],
         response_format={"type": "json_schema", "json_schema": {"name": task, "schema": schema, "strict": True}},
@@ -130,8 +156,9 @@ def _ask_openai(model: str, system: str, content: list, schema: dict, max_tokens
 
 
 def call_json(task: str, system: str, content: list, schema: dict, *, state_dir: Path, max_tokens: int = 16000,
-              effort: str = "low", model: str = MODEL) -> dict | None:
-    """-> the parsed JSON object, or None when both models refuse or return unparseable text."""
+              effort: str = "low", model: str = MODEL, deadline: float | None = None) -> dict | None:
+    """-> the parsed JSON object, or None when both models refuse, return unparseable text, or the deadline
+    (time.monotonic()) leaves too little time for a call."""
     state_dir = Path(state_dir)
     use_openai = provider() == "openai"
     ask = _ask_openai if use_openai else _ask
@@ -145,8 +172,13 @@ def call_json(task: str, system: str, content: list, schema: dict, *, state_dir:
         return hit["value"]
     value = None
     for m in dict.fromkeys(models):
+        left = deadline - time.monotonic() if deadline else None
+        if left is not None and left < MIN_CALL_S:
+            print(f"llm {task}: skipped, {left:.0f} s left before the command deadline", file=sys.stderr)
+            break
+        timeout = min(REQUEST_TIMEOUT_S, left - 5) if left is not None else None
         try:
-            value = ask(m, system, content, schema, max_tokens, effort, task, state_dir)
+            value = ask(m, system, content, schema, max_tokens, effort, task, state_dir, timeout)
         except Exception as e:  # noqa: BLE001  the SDK already retried; one failed document must not stop the batch
             print(f"llm {task}: {m} failed: {type(e).__name__}: {e}", file=sys.stderr)
             value = None

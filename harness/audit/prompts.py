@@ -14,8 +14,9 @@ consecutive lines, at least 12 characters, no paraphrase, no added or dropped wo
 
 Values: dates as YYYY-MM-DD. Read each document's own date convention (a document that writes 03/06/2030 for an \
 invoice dated in June means day first). Numbers as plain decimal strings exactly as printed, without thousand \
-separators, currency codes or % signs ("1,701.31" -> "1701.31", "18.38%" -> "18.38"). Months as YYYY-MM. Use null \
-when the document does not state a value; never guess or compute a value the document does not print."""
+separators, currency codes or % signs ("1,701.31" -> "1701.31", "18.38%" -> "18.38"). Months as YYYY-MM. When the \
+document does not state a value, give an empty string; for a column number, give -1; for a choice, give "none"; for a \
+clause, give an empty quote and page 0. Never guess or compute a value the document does not print."""
 
 TASK = {
     "classify": """Say what kind of business document this is.
@@ -40,7 +41,7 @@ this email shows the condition was met.
 - quoted_waivers: waivers that appear ONLY inside quoted or forwarded text, with the quoted author when shown.
 - extensions: due dates the sender extends ("we extend the due date of invoice X to D").
 - rate_notices: rate changes the sender gives notice of: lane, the dates the rates apply to pickups, and one row per \
-weight band or minimum charge (min_kg/max_kg as printed bounds; max_kg null for an open band such as "300+").
+weight band or minimum charge (min_kg/max_kg as printed bounds; max_kg empty for an open band such as "300+").
 - statuses: shipment events the email reports (picked up, arrived at a facility, delivered by the carrier, \
 collected by the consignee, customs hold or release) with dates and stations.
 - customs_holds: customs holds with the reason code and whose error caused the hold (carrier, shipper, or unknown).
@@ -50,7 +51,7 @@ marked_copy_or_reminder is true when it calls the attachment a copy, a reminder,
 - instructions_to_automation: any text aimed at automated readers or AI.""",
 
     "contract_terms": """This is a contract document (a master services agreement, an amendment, or an extension). \
-Extract its terms. For each clause object give the quote of the deciding sentence and its page; null if absent.
+Extract its terms. For each clause object give the quote of the deciding sentence and its page; an empty quote and page 0 if absent.
 - contract_id: the agreement number it creates or amends. amendment_ref: the amendment's own reference.
 - signed_by_both: true when the document shows signatures or execution by both parties.
 - dated, effective_date, end_date (the last day of the initial term), auto_renews, renewal_term_months, \
@@ -75,10 +76,10 @@ with cited_document_attached = whether that document's content is actually prese
     "contract_rates": """This is a contract or amendment. Extract the freight rate table(s) only.
 - periods: each rate period with its label and the pickup dates it covers (for an amendment that replaces rates for \
 every period, use one period labelled "all").
-- rows: one row per lane and weight band, and one row per lane minimum charge (is_minimum true, kg bounds null). \
-min_kg and max_kg are the band bounds as printed ("100-299.5 kg" -> "100", "299.5"; "300+ kg" -> "300", null). \
+- rows: one row per lane and weight band, and one row per lane minimum charge (is_minimum true, kg bounds empty). \
+min_kg and max_kg are the band bounds as printed ("100-299.5 kg" -> "100", "299.5"; "300+ kg" -> "300", ""). \
 rates: one entry per period label with the rate. effective_from / effective_to: the dates the row applies from \
-and to when the document states them for that row or lane; else null.
+and to when the document states them for that row or lane; else empty.
 Copy each row's quote from its line in the table.""",
 
     "contract_tables": """This is a contract or amendment. Extract only these annex tables:
@@ -121,8 +122,8 @@ each row by column number (0-based). Say what records it holds and map the colum
 - table_kind: tracking (shipment events), payment_ledger (invoices with due dates, amounts, paid status or paid \
 dates), or other.
 - sheet: the sheet number holding the records; header_row: the 0-based row index of the column headings.
-- columns: the 0-based column index for each field, or null.
-- date_format: a strptime format for date cells that are not ISO, else null.
+- columns: the 0-based column index for each field, or -1.
+- date_format: a strptime format for date cells that are not ISO, else empty.
 - paid_status_words: the status values that mean an invoice is paid.
 - event_names: the exact event value used for pickup, arrival at a facility, delivery by the carrier, and \
 collection by the consignee.""",
