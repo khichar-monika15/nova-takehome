@@ -1,19 +1,26 @@
 # AI use
 
-Replace each prompt line (the ones starting with `>`) with your own words.
-
 ## Tools
 
-> Which AI tools and models you used, and for which parts of the work.
+Claude Code (the Anthropic command-line agent) with the model `claude-opus-5-5` did almost all the work in one session. It read the brief and the grader code, made the plan, wrote the code and the tests, and drafted the documents. Five subagents of the same model did separate jobs. Two studied the grader and the data, and one checked current practice on the web. One built a blind answer key for the exam mailbox by hand, and one wrote the new eval mailboxes. The session used the Superpowers skills for its process: brainstorming, plan writing, plan execution, test-driven development and systematic debugging. OpenAI `gpt-5.5` and `gpt-5.4-mini` were not coding tools. They were the model inside the program for the local runs, because no Anthropic key was available.
 
 ## How you worked with them
 
-> What you asked them to do, what you checked yourself, and where they got it wrong.
+The person in the session gave the goal and made the decisions. These decisions were: plan to the 48-hour deadline, use the approach "the model reads, code decides", use OpenAI for local runs, and use this GitHub account. Claude asked before each of these decisions, and the log shows the questions and the answers.
+
+Checks did not rely on reading the code. The grader's own tools scored the work. A blind subagent built the exam answer key without seeing the code. The answer sheet of the program matched it on 9 of 9 rows. Every rule has a unit test that failed before the code existed.
+
+The AI got these things wrong, and the log shows each fix:
+
+- The first rules used the practice contract's charge codes and exact lane text. The new eval mailboxes found it (12 of 21 cases passed), and the fix reads charge kinds by meaning.
+- A late fee on an invoice that only the AP register held was skipped. The worked example found it.
+- One test expected the wrong normalized invoice id, and one test used a label that its own fixture did not hold.
+- The brief to the eval subagent said a one-off waiver made the next month a finding. The subagent followed GLOSSARY.md instead, which says the opposite, and that was right.
 
 ## Written without AI
 
-> Any parts you wrote on your own, if there are some.
+No code, test or document in this repository was written without AI. The decisions in the section above came from the person in the session.
 
 ## Prompt log
 
-> Paste the log here, or link the exported files in ai_log/. Take out secrets and nothing else.
+The full log is in `ai_log/`: `session.md` is the main session, and each `subagent-*.md` file is one subagent. `ai_log/export_log.py` made them from the Claude Code session files. The script cuts long tool results to 1,500 characters and replaces API keys with a marker. One OpenAI key was removed. Nothing else was removed or changed.
