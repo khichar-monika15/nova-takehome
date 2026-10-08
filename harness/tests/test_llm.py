@@ -124,3 +124,15 @@ def test_openai_refusal_gives_none(monkeypatch, tmp_path):
     monkeypatch.setattr(llm, "_openai_client", lambda: FakeOpenAI(text=None, refusal="no"))
     monkeypatch.setattr(llm, "DEV_CACHE", None)
     assert llm.call_json("t", "sys", [{"type": "text", "text": "r"}], SCHEMA, state_dir=tmp_path) is None
+
+
+def test_dev_cache_written_by_one_provider_is_read_by_the_other(monkeypatch, tmp_path):
+    monkeypatch.setattr(llm, "DEV_CACHE", tmp_path / "dev")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "o")
+    monkeypatch.setattr(llm, "_openai_client", lambda: FakeOpenAI(text='{"a": 9}'))
+    content = [{"type": "text", "text": "same document"}]
+    assert llm.call_json("t", "sys", content, SCHEMA, state_dir=tmp_path / "s1") == {"a": 9}
+    monkeypatch.delenv("OPENAI_API_KEY")
+    monkeypatch.setattr(llm, "_client", lambda: (_ for _ in ()).throw(AssertionError("no network expected")))
+    assert llm.call_json("t", "sys", content, SCHEMA, state_dir=tmp_path / "s2") == {"a": 9}

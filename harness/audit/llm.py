@@ -59,8 +59,10 @@ def _openai_content(content: list) -> list:
     return out
 
 
-def _key(model: str, system: str, content: list, schema: dict, effort: str) -> str:
-    blob = json.dumps([model, system, content, schema, effort], sort_keys=True)
+def _key(system: str, content: list, schema: dict, effort: str) -> str:
+    """Same document, prompt and schema -> same key, whichever provider answered (so `make grade`, which passes
+    only the Anthropic variables, can replay a local run from the dev cache)."""
+    blob = json.dumps([system, content, schema, effort], sort_keys=True)
     return hashlib.sha256(blob.encode()).hexdigest()
 
 
@@ -134,7 +136,7 @@ def call_json(task: str, system: str, content: list, schema: dict, *, state_dir:
     use_openai = provider() == "openai"
     ask = _ask_openai if use_openai else _ask
     models = [OPENAI_MODELS.get(m, m) for m in (model, FALLBACK_MODEL)] if use_openai else [model, FALLBACK_MODEL]
-    key = _key(models[0], system, content, schema, effort)
+    key = _key(system, content, schema, effort)
     paths = [state_dir / "llm" / f"{key}.json"] + ([DEV_CACHE / f"{key}.json"] if DEV_CACHE else [])
     hit = _read(paths)
     if hit is not None:
