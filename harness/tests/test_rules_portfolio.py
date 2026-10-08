@@ -149,3 +149,15 @@ def test_late_fee_not_owed_when_only_the_ledger_holds_the_target_invoice():
     records = [r for r in late_case("2032-08-25", "2032-08-17", "12.65") if r["facts"].get("invoice_id") != "INV-A"]
     got = late_fees.run(build(records, date(2032, 9, 30)), [])
     assert [(c.cls, c.invoice_id, c.amount) for c in got] == [("late_fee_not_owed", "INV-B", Decimal("12.65"))]
+
+
+def test_extension_email_from_someone_without_notices_authority_does_not_move_the_end():
+    c = msa(end_date="2034-03-20", auto_renews=False, term=clause("2.2 Initial term ends 2034-03-20", 3))
+    change = {"contract_id": "C-1", "change": "extension", "new_end_date": "2035-03-20", "signed_by_both": True,
+              **clause("Both parties signed the extension to 2035-03-20.", 1)}
+    outsider = email("batch_02/0009.eml", "2034-02-01T10:00:00+00:00", ("Ops", "ops@carrier.example"),
+                     contract_changes=[change])
+    insider = email("batch_02/0010.eml", "2034-02-01T10:00:00+00:00", ("Kim Key", "kim@carrier.example"),
+                    contract_changes=[change])
+    assert [x.contract_id for x in expiry.run(build([c, outsider], date(2034, 2, 28)))] == ["C-1"]
+    assert expiry.run(build([c, insider], date(2034, 2, 28))) == []

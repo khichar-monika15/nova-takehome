@@ -10,7 +10,7 @@ from pathlib import Path
 
 import jsonschema
 
-from . import actions, confidence, feedback, state
+from . import actions, confidence, feedback, state, terms
 from .ingest import retry_failed
 from .money import fmt
 from .quotes import long_enough
@@ -57,10 +57,23 @@ def _candidates(w: World) -> list[Candidate]:
                                + _safe("expiry", expiry.run, w), w.feedback)
     by_key: dict[tuple, Candidate] = {}
     for c in invoice_items + portfolio:
+        c.features["recipient"] = _recipient_known(w, c)
         old = by_key.get(c.key)
         if old is None or VERDICT_RANK[c.verdict] < VERDICT_RANK[old.verdict]:
             by_key[c.key] = c
     return list(by_key.values())
+
+
+def _recipient_known(w: World, c: Candidate) -> bool:
+    """Unattended check 5: the outbound action has a recipient that Schedule 1 names."""
+    if c.verdict == "cannot_determine":
+        return bool((c.missing_doc or {}).get("holder", {}).get("person"))
+    contract = w.contracts.get((c.contract_id or "").upper())
+    if contract is None:
+        return False
+    if c.cls == "cashback":
+        return bool(terms.contact(contract, "billing_disputes") or terms.key_account_manager(contract))
+    return bool(terms.contact(contract, "billing_disputes"))
 
 
 def _key_str(c: Candidate) -> str:

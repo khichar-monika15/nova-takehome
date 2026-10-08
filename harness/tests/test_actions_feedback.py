@@ -154,3 +154,22 @@ def test_feedback_granted_waiver_authority_turns_a_waiver_into_a_finding_with_le
     got = waiver.run(build([msa(), waiver_mail(("Kim Key", "kim@carrier.example")), dlv_invoice()], AS_OF, fb))
     assert [(c.invoice_id, c.learned_at["feedback_item_id"]) for c in got] == [("INV-30", "fb-5")]
     assert WES
+
+
+def test_autonomous_needs_a_schedule_1_recipient_to_execute():
+    no_contact = oc()
+    no_contact.features["recipient"] = False
+    assert act([no_contact], "autonomous") == ["human_review"]
+
+
+def test_report_marks_whether_schedule_1_names_the_dispute_recipient():
+    from audit.report import _candidates
+    from fixtures import tracking
+    from test_rules_invoice import oc_invoice
+    base = msa()
+    w = build([base, oc_invoice(), tracking([("S1", "picked_up", "2031-12-25", "AAA")])], AS_OF)
+    assert [c.features["recipient"] for c in _candidates(w)] == [True]
+    for row in base["facts"]["terms"]["schedule1"]:
+        row["categories"] = [x for x in row["categories"] if x != "billing_disputes"]
+    w = build([base, oc_invoice(), tracking([("S1", "picked_up", "2031-12-25", "AAA")])], AS_OF)
+    assert [c.features["recipient"] for c in _candidates(w)] == [False]

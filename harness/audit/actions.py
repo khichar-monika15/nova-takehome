@@ -34,7 +34,7 @@ def _verb(c: Candidate) -> str | None:
 
 def _unattended_ok(c: Candidate, conflicts: set[tuple]) -> bool:
     f = c.features
-    if not c.evidence:
+    if not c.evidence or f.get("recipient") is False:
         return False
     if c.verdict == "finding" and c.cls == "overcharge" and f.get("pickup_source") not in CARRIER_RECORD_SOURCES:
         return False

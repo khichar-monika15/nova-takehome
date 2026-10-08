@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from .. import terms
 from ..money import parse_date
 from ..world import Contract, World, dec, ev
 from . import Candidate, dedupe
@@ -19,6 +20,8 @@ def _end(w: World, c: Contract):
             if new and (end is None or new > end):
                 end, evidence = new, [ev(a, t.get("term"))]
     for mail in w.emails:
+        if not terms.authorised(w, c, mail.sender_email, mail.sender_name, "notices", mail.received_at.date()):
+            continue
         for ch in mail.facts.get("contract_changes", []):
             if ch.get("change") == "extension" and ch.get("signed_by_both") and \
                     (ch.get("contract_id") or "").upper() in ("", c.id):
