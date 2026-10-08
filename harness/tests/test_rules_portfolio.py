@@ -143,3 +143,9 @@ def test_inr_spend_total_is_the_sum_of_per_invoice_rounded_usd():
                                             "90556.09")], currency="INR")
     w = build([base, a, b], date(2031, 2, 28))
     assert cashback._spend(w, w.contracts["C-1"], date(2030, 1, 12), date(2031, 1, 11)) == Decimal("1640.08")
+
+
+def test_late_fee_not_owed_when_only_the_ledger_holds_the_target_invoice():
+    records = [r for r in late_case("2032-08-25", "2032-08-17", "12.65") if r["facts"].get("invoice_id") != "INV-A"]
+    got = late_fees.run(build(records, date(2032, 9, 30)), [])
+    assert [(c.cls, c.invoice_id, c.amount) for c in got] == [("late_fee_not_owed", "INV-B", Decimal("12.65"))]

@@ -6,23 +6,23 @@ from decimal import Decimal
 
 from .. import terms
 from ..money import ceil_div, cents, parse_date
-from ..world import Invoice, World, dec, ev, norm_id
+from ..world import Contract, Invoice, World, dec, ev, norm_id
 from . import Candidate, dedupe, to_usd
 
 RISK_DAYS = 14
 
 
-def _due(w: World, inv: Invoice) -> tuple[date | None, list[dict | None]]:
-    """The due date, moved by an extension from the contract's payment_terms person, and its evidence."""
-    due = inv.due
-    led = w.ledger.get(inv.key)
+def _due(w: World, key: str, c: Contract | None, printed: date | None) -> tuple[date | None, list[dict | None]]:
+    """The due date (printed, else from the ledger), moved by an extension from the contract's payment_terms
+    person, and its evidence."""
+    due = printed
+    led = w.ledger.get(key)
     if due is None and led:
         due = parse_date(led[1].get("due_date"))
     evidence: list[dict | None] = []
-    c = inv.contract
     for mail in w.emails:
         for x in mail.facts.get("extensions", []):
-            if norm_id(x.get("invoice_id", "")) != inv.key or c is None:
+            if norm_id(x.get("invoice_id", "")) != key or c is None:
                 continue
             if not terms.authorised(w, c, mail.sender_email, mail.sender_name, "payment_terms",
                                     mail.received_at.date()):
@@ -44,8 +44,8 @@ def _fees(principal: Decimal, months: int, rate: Decimal, compounding: bool) -> 
     return total
 
 
-def _late_terms(inv: Invoice):
-    lf = (inv.contract.terms.get("late_fee") if inv.contract else None) or {}
+def _late_terms(c: Contract | None):
+    lf = (c.terms.get("late_fee") if c else None) or {}
     return dec(lf.get("rate_pct")), int(dec(lf.get("grace_days")) or 0), bool(lf.get("compounding")), lf
 
 
@@ -64,10 +64,11 @@ def _not_owed(w: World) -> list[Candidate]:
     out = {}
     for target_key, rows in by_target.items():
         target = w.latest_invoice(target_key)
-        if target is None or target.contract is None:
+        contract = target.contract if target and target.contract else rows[0][0].contract
+        if contract is None:
             continue
-        rate, grace, compounding, lf = _late_terms(target)
-        due, due_ev = _due(w, target)
+        rate, grace, compounding, lf = _late_terms(contract)
+        due, due_ev = _due(w, target_key, contract, target.due if target else None)
         led = w.ledger.get(target_key)
         if rate is None or due is None or led is None:
             continue
@@ -77,7 +78,7 @@ def _not_owed(w: World) -> list[Candidate]:
         if end is None:
             continue
         days_late = (end - due).days
-        principal = dec(led[1].get("amount")) or target.total
+        principal = dec(led[1].get("amount")) or (target.total if target else None)
         owed = Decimal(0) if days_late <= grace or principal is None else \
             _fees(principal, ceil_div(days_late, 30), rate, compounding)
         billed_before = Decimal(0)
@@ -93,10 +94,10 @@ def _not_owed(w: World) -> list[Candidate]:
             prev = out.get(inv.key)
             amount = usd + (prev.amount if prev else 0)
             out[inv.key] = Candidate(
-                cls="late_fee_not_owed", verdict="finding", invoice_id=inv.id, contract_id=target.contract.id,
+                cls="late_fee_not_owed", verdict="finding", invoice_id=inv.id, contract_id=contract.id,
                 amount=amount, evidence=dedupe([ev(inv.doc, ln.item), *due_ev, ev(led[0], led[1]),
-                                                ev(target.contract.msa, lf.get("clause")) if target.contract.msa
-                                                else None, *fx_ev]),
+                                                ev(contract.msa, lf.get("clause")) if contract.msa else None,
+                                                *fx_ev]),
                 deciding_refs=[inv.doc.ref, led[0].ref],
                 features={"pickup_source": "invoice", "judgment": False, "inr": inv.currency != "USD"})
     return list(out.values())
@@ -119,11 +120,11 @@ def _risk(w: World, disputed: dict[str, Decimal]) -> list[Candidate]:
         inv = copies[0]
         if inv.contract is None:
             continue
-        due, due_ev = _due(w, inv)
+        due, due_ev = _due(w, key, inv.contract, inv.due)
         if due is None or not (0 < (due - w.as_of).days <= RISK_DAYS):
             continue
         unpaid, led_ev = _unpaid(w, inv)
-        rate, _, _, lf = _late_terms(inv)
+        rate, _, _, lf = _late_terms(inv.contract)
         if not unpaid or rate is None:
             continue
         led = w.ledger.get(key)
