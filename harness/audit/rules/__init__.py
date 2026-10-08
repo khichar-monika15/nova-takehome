@@ -30,6 +30,8 @@ class Candidate:
     deciding_refs: list[str] = field(default_factory=list)
     due: date | None = None
     native: Decimal | None = None
+    action: str = ""
+    confidence: float = 0.0
 
     @property
     def key(self) -> tuple:

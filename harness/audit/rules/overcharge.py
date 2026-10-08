@@ -176,7 +176,8 @@ def audit_invoice(w: World, inv: Invoice) -> Candidate | None:
                for s in groups if s]
     base.features = {"pickup_source": max(pickups, key=("tracking", "status_email", "awb", "invoice").index)
                      if pickups else "invoice",
-                     "judgment": any(p.judgment for p in priced), "inr": inv.currency != "USD"}
+                     "judgment": any(p.judgment for p in priced), "inr": inv.currency != "USD",
+                     "lanes": {ln.lane for ln in inv.lines if ln.lane}}
     base.deciding_refs = [inv.doc.ref]
     if missing:
         base.verdict = "cannot_determine"
