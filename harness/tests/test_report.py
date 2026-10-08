@@ -48,3 +48,36 @@ def test_failed_documents_are_left_out_and_the_report_is_still_valid():
     rep, _ = build_report([msa(), bad, TRACK], [], date(2032, 8, 31), "supervised", {})
     jsonschema.validate(rep, SCHEMA)
     assert rep["findings"] == []
+
+
+def test_a_crashing_rule_drops_only_its_own_items(monkeypatch):
+    from audit.rules import cashback
+
+    def boom(w):
+        raise AttributeError("'NoneType' object has no attribute 'strftime'")
+
+    monkeypatch.setattr(cashback, "run", boom)
+    rep, _ = build_report([msa(), oc_invoice(), TRACK], [], date(2032, 8, 31), "supervised", {})
+    jsonschema.validate(rep, SCHEMA)
+    assert [f["invoice_id"] for f in rep["findings"]] == ["INV-1"]
+
+
+def test_report_command_prints_an_empty_valid_report_when_building_fails(monkeypatch, tmp_path):
+    from audit import report as report_mod
+
+    monkeypatch.setattr(report_mod, "build_report", lambda *a, **k: 1 / 0)
+    rep = report_mod.report("2032-08-31", "supervised", str(tmp_path))
+    jsonschema.validate(rep, SCHEMA)
+    assert rep["findings"] == [] and rep["mode"] == "supervised"
+
+
+def test_inr_credit_note_without_a_date_does_not_crash_cashback():
+    from audit.rules import cashback
+    from audit.world import build
+    from fixtures import invoice, line
+    from test_rules_portfolio import rebate_msa, spend
+    cn = invoice("CN-1", "", [line(None, None, "Credit", None, "1", "other", "10", "-10")], currency="INR",
+                 received="2033-07-01T10:00:00+00:00",
+                 doc_type="credit_note", credit={"credits_invoice": None, "period": "2033-Q2", "credit_type": "rebate"})
+    records = [rebate_msa(), spend("Q2-1", "2033-04-10", "70000.00"), cn]
+    assert [c.period for c in cashback.run(build(records, date(2033, 11, 30)))] == ["2033-Q2"]

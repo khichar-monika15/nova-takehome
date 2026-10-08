@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import sys
 import time
+import traceback
 from datetime import date, datetime
 from pathlib import Path
 
@@ -17,7 +18,8 @@ from .rules import Candidate, cashback, duplicate, expiry, late_fees, overcharge
 from .world import World, build, norm_id
 
 SCHEMA_PATH = Path(__file__).resolve().parents[2] / "grader" / "schema" / "report.schema.json"
-RETRY_BUDGET_S = 360
+RETRY_START_S = 300
+RETRY_DEADLINE_S = 420
 VERDICT_RANK = {"finding": 0, "conflict": 1, "cannot_determine": 2}
 
 
@@ -39,9 +41,20 @@ def _feedback_by(items: list[dict], as_of: date) -> list[dict]:
     return out
 
 
+def _safe(name: str, fn, *args) -> list[Candidate]:
+    """One rule that fails on unexpected facts loses its own items; the other rules and the report go on."""
+    try:
+        return fn(*args)
+    except Exception:  # noqa: BLE001
+        print(f"report: rule {name} failed and was skipped:\n{traceback.format_exc()}", file=sys.stderr)
+        return []
+
+
 def _candidates(w: World) -> list[Candidate]:
-    invoice_items = feedback.apply(overcharge.run(w) + duplicate.run(w) + waiver.run(w), w.feedback)
-    portfolio = feedback.apply(late_fees.run(w, invoice_items) + cashback.run(w) + expiry.run(w), w.feedback)
+    invoice_items = feedback.apply(_safe("overcharge", overcharge.run, w) + _safe("duplicate", duplicate.run, w)
+                                   + _safe("waiver", waiver.run, w), w.feedback)
+    portfolio = feedback.apply(_safe("late_fees", late_fees.run, w, invoice_items) + _safe("cashback", cashback.run, w)
+                               + _safe("expiry", expiry.run, w), w.feedback)
     by_key: dict[tuple, Candidate] = {}
     for c in invoice_items + portfolio:
         old = by_key.get(c.key)
@@ -145,17 +158,33 @@ def build_report(records: list[dict], fb: list[dict], as_of: date, mode: str, hi
     return report, new_history
 
 
+def _empty(as_of: str, mode: str) -> dict:
+    return {"schema_version": "1.0", "as_of": as_of, "mode": mode, "findings": [],
+            "portfolio": {"cashback": [], "expiry": [], "late_fee_risk": []}}
+
+
 def report(as_of: str, mode: str, state_dir: str) -> dict:
     state_dir = Path(state_dir)
     t0 = time.monotonic()
-    retry_failed(state_dir, budget_s=RETRY_BUDGET_S)
+    try:
+        retry_failed(state_dir, budget_s=RETRY_START_S, deadline_s=RETRY_DEADLINE_S)
+    except Exception:  # noqa: BLE001
+        print(f"report: retry of failed documents stopped:\n{traceback.format_exc()}", file=sys.stderr)
     day = date.fromisoformat(as_of)
     hist_path = state_dir / "reports" / f"history-{mode}.json"
-    rep, hist = build_report(state.load_docs(state_dir, day), feedback.load(state_dir), day, mode,
-                             state.read_json(hist_path, {}))
+    try:
+        rep, hist = build_report(state.load_docs(state_dir, day), feedback.load(state_dir), day, mode,
+                                 state.read_json(hist_path, {}))
+    except Exception:  # noqa: BLE001  a report must always print valid JSON
+        print(f"report: build failed, printing an empty report:\n{traceback.format_exc()}", file=sys.stderr)
+        return _empty(as_of, mode)
     state.write_json(hist_path, hist)
     _, validator = _schema()
     validator.validate(rep)
-    print(f"report: {sum(len(v) for v in rep['portfolio'].values()) + len(rep['findings'])} items in "
-          f"{time.monotonic() - t0:.0f} s", file=sys.stderr)
+    items = rep["findings"] + [x for v in rep["portfolio"].values() for x in v]
+    reported = [x for x in items if x["verdict"] in ("finding", "conflict", "cannot_determine")]
+    to_person = [x for x in reported if x["action"] in ("escalate", "human_review")]
+    share = len(to_person) / len(reported) if reported else 0.0
+    print(f"report: {len(items)} items in {time.monotonic() - t0:.0f} s; {len(to_person)} of {len(reported)} "
+          f"({share:.0%}) go to a person (the cap is 60%)", file=sys.stderr)
     return rep

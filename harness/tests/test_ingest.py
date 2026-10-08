@@ -10,7 +10,7 @@ OVER = REPO / "data/examples/overcharge/docs/batch_01"
 def fake_extract(monkeypatch, fail=()):
     calls = []
 
-    def run(doc, state_dir):
+    def run(doc, state_dir, deadline=None):
         calls.append(doc.ref)
         if doc.ref in fail:
             return {"kind": "invoice", "facts": {}, "ok": False}

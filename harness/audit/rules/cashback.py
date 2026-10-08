@@ -30,6 +30,8 @@ def _qualifying(c: Contract, inv: Invoice) -> Decimal:
 def _usd(c: Contract, inv: Invoice, amount: Decimal) -> Decimal | None:
     if inv.currency == "USD":
         return amount
+    if inv.date is None:
+        return None
     fx, _ = fx_rate(c, inv.date.strftime("%Y-%m"))
     return cents(amount / fx) if fx else None
 

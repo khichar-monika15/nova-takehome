@@ -47,9 +47,9 @@ def _content(doc: Doc, task: str, limit: int | None = None) -> list[dict]:
     return body + [{"type": "text", "text": prompts.TASK[task]}]
 
 
-def _call(task: str, doc: Doc, state_dir: Path, limit: int | None = None):
+def _call(task: str, doc: Doc, state_dir: Path, limit: int | None = None, deadline: float | None = None):
     return call_json(task, prompts.SYSTEM, _content(doc, task, limit), schemas.ALL[task], state_dir=state_dir,
-                     model=MODEL_FOR[task])
+                     model=MODEL_FOR[task], deadline=deadline)
 
 
 def _repair_quotes(node, doc: Doc) -> None:
@@ -73,10 +73,10 @@ def _repair_quotes(node, doc: Doc) -> None:
             _repair_quotes(v, doc)
 
 
-def classify(doc: Doc, state_dir: Path) -> str:
+def classify(doc: Doc, state_dir: Path, deadline: float | None = None) -> str:
     if doc.kind_hint == "email":
         return "email"
-    out = _call("classify", doc, state_dir, CLASSIFY_CHARS)
+    out = _call("classify", doc, state_dir, CLASSIFY_CHARS, deadline)
     return out["kind"] if out else "other"
 
 
@@ -105,11 +105,12 @@ def _cell(cells, idx):
     return cells[idx] if idx is not None and 0 <= idx < len(cells) else ""
 
 
-def _table_facts(doc: Doc, state_dir: Path) -> dict:
+def _table_facts(doc: Doc, state_dir: Path, deadline: float | None = None) -> dict:
     sheets = _sheet_rows(doc.data)
     content = [{"type": "text", "text": f"Spreadsheet: {doc.name}\n{_table_preview(sheets)}"},
                {"type": "text", "text": prompts.TASK["table"]}]
-    m = call_json("table", prompts.SYSTEM, content, schemas.TABLE, state_dir=state_dir, model=MODEL_FOR["table"])
+    m = call_json("table", prompts.SYSTEM, content, schemas.TABLE, state_dir=state_dir, model=MODEL_FOR["table"],
+                  deadline=deadline)
     if not m:
         return {"table_kind": "other"}
     sheet_no = m["sheet"] if 1 <= m["sheet"] <= len(sheets) else 1
@@ -140,20 +141,20 @@ def _table_facts(doc: Doc, state_dir: Path) -> dict:
 
 
 # ---- one document -----------------------------------------------------------------------------------------------------
-def extract_doc(doc: Doc, state_dir: Path) -> dict:
-    """-> {"kind": ..., "facts": {...}, "ok": bool}."""
-    kind = classify(doc, state_dir)
+def extract_doc(doc: Doc, state_dir: Path, deadline: float | None = None) -> dict:
+    """-> {"kind": ..., "facts": {...}, "ok": bool}. No model call starts once the deadline is too close."""
+    kind = classify(doc, state_dir, deadline)
     if kind == "email":
-        f = _call("email", doc, state_dir)
+        f = _call("email", doc, state_dir, None, deadline)
     elif kind == "contract":
         parts = ("contract_terms", "contract_rates", "contract_tables")
-        got = run_parallel([lambda t=t: _call(t, doc, state_dir) for t in parts], workers=3,
-                           deadline=time.monotonic() + 600)
+        got = run_parallel([lambda t=t: _call(t, doc, state_dir, None, deadline) for t in parts], workers=3,
+                           deadline=deadline or time.monotonic() + 600)
         f = None if any(g is None for g in got) else dict(zip(("terms", "rates", "tables"), got))
     elif kind == "table":
-        f = _table_facts(doc, state_dir)
+        f = _table_facts(doc, state_dir, deadline)
     elif kind in ("invoice", "awb", "dgd"):
-        f = _call(kind, doc, state_dir)
+        f = _call(kind, doc, state_dir, None, deadline)
     else:
         f = {}
     if f is None:
