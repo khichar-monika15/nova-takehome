@@ -53,7 +53,7 @@ def _fee_lines(w: World):
     for copies in w.invoices.values():
         inv = copies[0]
         for ln in inv.lines:
-            if ln.code == "LATE" and ln.refers_to_invoice:
+            if ln.kind == "late_fee" and ln.refers_to_invoice:
                 yield inv, ln
 
 

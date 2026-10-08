@@ -9,7 +9,8 @@ from ..terms import fx_rate
 from ..world import Contract, Invoice, World, dec, ev, norm_label
 from . import Candidate, dedupe
 
-FREIGHT_CODES = {"FRT", "FUEL", "SEC"}
+QUALIFYING_KINDS = {"freight", "fuel", "security"}
+EXCLUDED_KINDS = {"late_fee", "duty", "tax"}
 
 
 def _quarter(d: date) -> tuple[int, int]:
@@ -21,8 +22,9 @@ def _quarter_end(y: int, q: int) -> date:
 
 
 def _qualifying(c: Contract, inv: Invoice) -> Decimal:
-    allowed = FREIGHT_CODES | {a["code"] for a in c.tables.get("accessorials", [])}
-    return sum((ln.amount for ln in inv.lines if ln.code in allowed), Decimal(0))
+    accessorial_codes = {a["code"] for a in c.tables.get("accessorials", [])}
+    return sum((ln.amount for ln in inv.lines if ln.kind not in EXCLUDED_KINDS and (
+        ln.kind in QUALIFYING_KINDS or ln.code in accessorial_codes)), Decimal(0))
 
 
 def _usd(c: Contract, inv: Invoice, amount: Decimal) -> Decimal | None:

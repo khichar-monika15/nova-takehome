@@ -9,8 +9,8 @@ from ..money import cents
 from ..world import Invoice, Line, Shipment, World, dec, ev
 from . import Candidate, dedupe, to_usd
 
-PER_SHIPMENT_CONDITIONS = {"DG": "dangerous_goods", "DRYICE": "dry_ice", "DLV": "delivery", "CUSTOMS": "customs"}
-NOT_PRICED = {"LATE", "DUTY", "TAX", "COST", "MARGIN", "HDL"}
+CONDITIONAL_KINDS = {"dangerous_goods", "dry_ice", "delivery", "customs"}
+NOT_PRICED = {"late_fee", "duty", "tax", "cost", "margin", "handling", "other"}
 
 
 @dataclass
@@ -32,7 +32,7 @@ def _pickup(w: World, inv: Invoice, sid: str | None, lines: list[Line]):
 
 
 def _freight_kg(lines: list[Line], sh: Shipment | None) -> Decimal | None:
-    frt = next((ln for ln in lines if ln.code == "FRT" and ln.unit == "kg" and ln.qty), None)
+    frt = next((ln for ln in lines if ln.kind == "freight" and ln.unit == "kg" and ln.qty), None)
     if frt:
         return frt.qty
     if sh and sh.awb:
@@ -58,8 +58,8 @@ def _price_group(w: World, inv: Invoice, sid: str | None, lines: list[Line], pic
             out.diffs.append((ln, ln.amount - correct))
             out.evidence.extend([ev(inv.doc, ln.item), *evidence])
 
-    for ln in sorted(lines, key=lambda x: x.code != "FRT"):
-        if ln.code == "FRT":
+    for ln in sorted(lines, key=lambda x: x.kind != "freight"):
+        if ln.kind == "freight":
             if lane is None or kg is None:
                 continue
             r = terms.rate(w, c, lane, kg, pickup)
@@ -81,7 +81,7 @@ def _price_group(w: World, inv: Invoice, sid: str | None, lines: list[Line], pic
                 correct = r.minimum
             correct_freight = (correct_freight or Decimal(0)) + correct
             billed_wrong(ln, correct, *r.evidence)
-        elif ln.code == "FUEL":
+        elif ln.kind == "fuel":
             pct, fuel_ev = terms.fuel_pct(c, pickup)
             if pct is None:
                 continue
@@ -89,12 +89,12 @@ def _price_group(w: World, inv: Invoice, sid: str | None, lines: list[Line], pic
             if base is None:
                 continue
             billed_wrong(ln, cents(pct / 100 * base), *fuel_ev, terms.rule_evidence(c, "fuel"))
-        elif ln.code and ln.code not in NOT_PRICED:
+        elif ln.code and ln.kind not in NOT_PRICED:
             row, acc_ev = terms.accessorial(c, ln.code, pickup)
             if not row:
                 continue
             correct = _accessorial(c, row, ln, kg, pickup, sh, out)
-            rule = PER_SHIPMENT_CONDITIONS.get(ln.code) or ("storage" if row.get("basis") == "day" else None)
+            rule = ln.kind if ln.kind in CONDITIONAL_KINDS else ("storage" if row.get("basis") == "day" else None)
             billed_wrong(ln, correct, *acc_ev, terms.rule_evidence(c, rule) if rule else None, *_condition_ev(sh))
     if out.diffs:
         out.evidence.append(pickup_ev)
@@ -115,7 +115,7 @@ def _accessorial(c, row: dict, ln: Line, kg, pickup, sh: Shipment | None, out: P
     fee = dec(row.get("fee"))
     if fee is None:
         return None
-    basis, code = row.get("basis"), ln.code
+    basis, kind = row.get("basis"), ln.kind
     if row.get("months") and pickup.month not in row["months"]:
         return Decimal("0.00")
     if basis == "kg":
@@ -128,18 +128,18 @@ def _accessorial(c, row: dict, ln: Line, kg, pickup, sh: Shipment | None, out: P
         return cents(fee * days) if days is not None else cents(fee * (ln.qty or 1))
     if basis != "shipment":
         return None
-    if code == "DG" and sh and sh.dgd:
+    if kind == "dangerous_goods" and sh and sh.dgd:
         out.judgment = True
         f = sh.dgd[1]
         return Decimal("0.00") if f.get("dry_ice_refrigerant_only") and not f.get(
             "dangerous_goods_other_than_dry_ice") else fee
-    if code == "DRYICE" and sh and sh.dgd:
+    if kind == "dry_ice" and sh and sh.dgd:
         out.judgment = True
         return Decimal("0.00") if sh.dgd[1].get("dangerous_goods_other_than_dry_ice") else fee
-    if code == "DLV" and sh and sh.events:
+    if kind == "delivery" and sh and sh.events:
         out.judgment = True
         return Decimal("0.00") if sh.first_event("collected_by_consignee") else fee
-    if code == "CUSTOMS" and sh and sh.holds:
+    if kind == "customs" and sh and sh.holds:
         out.judgment = True
         return Decimal("0.00") if any(h.get("cause") == "carrier" for _, h in sh.holds) else fee
     return fee
@@ -193,7 +193,7 @@ def audit_invoice(w: World, inv: Invoice) -> Candidate | None:
         base.verdict = "conflict"
         base.amount_range = (cents(min(totals)), cents(max(totals)))
         base.evidence = dedupe([e for p in priced for e in p.evidence] + [ev(inv.doc, ln.item) for ln in inv.lines
-                                                                          if ln.code == "FRT"])
+                                                                          if ln.kind == "freight"])
         return base
     total = _total(priced)
     if total <= 0:

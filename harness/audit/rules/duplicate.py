@@ -6,11 +6,11 @@ from decimal import Decimal
 from ..world import Invoice, World, ev, norm_id
 from . import Candidate, dedupe, to_usd
 
-SKIP_GROUPS = {"LATE", "TAX", "DUTY"}
+SKIP_KINDS = {"late_fee", "tax", "duty"}
 
 
 def _line_key(ln) -> tuple | None:
-    if ln.group in SKIP_GROUPS:
+    if ln.kind in SKIP_KINDS:
         return None
     if ln.shipment:
         return ("shipment", ln.shipment, ln.group, ln.amount)
