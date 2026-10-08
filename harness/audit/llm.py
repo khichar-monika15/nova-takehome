@@ -10,6 +10,7 @@ from pathlib import Path
 
 MODEL = "claude-opus-5-5"
 FALLBACK_MODEL = "claude-sonnet-5-5"
+SMALL_MODEL = "claude-haiku-5-5"
 REQUEST_TIMEOUT_S = 300
 
 _REPO = Path(__file__).resolve().parents[2]
@@ -75,10 +76,10 @@ def _ask(model: str, system: str, content: list, schema: dict, max_tokens: int, 
 
 
 def call_json(task: str, system: str, content: list, schema: dict, *, state_dir: Path, max_tokens: int = 16000,
-              effort: str = "low") -> dict | None:
+              effort: str = "low", model: str = MODEL) -> dict | None:
     """-> the parsed JSON object, or None when both models refuse or return unparseable text."""
     state_dir = Path(state_dir)
-    key = _key(MODEL, system, content, schema, effort)
+    key = _key(model, system, content, schema, effort)
     paths = [state_dir / "llm" / f"{key}.json"] + ([DEV_CACHE / f"{key}.json"] if DEV_CACHE else [])
     hit = _read(paths)
     if hit is not None:
@@ -86,11 +87,11 @@ def call_json(task: str, system: str, content: list, schema: dict, *, state_dir:
             _write(paths[:1], hit)
         return hit["value"]
     value = None
-    for model in (MODEL, FALLBACK_MODEL):
+    for m in dict.fromkeys((model, FALLBACK_MODEL)):
         try:
-            value = _ask(model, system, content, schema, max_tokens, effort, task, state_dir)
+            value = _ask(m, system, content, schema, max_tokens, effort, task, state_dir)
         except Exception as e:  # the SDK already retried; one failed document must not stop the batch
-            print(f"llm {task}: {model} failed: {type(e).__name__}: {e}", file=sys.stderr)
+            print(f"llm {task}: {m} failed: {type(e).__name__}: {e}", file=sys.stderr)
             value = None
         if value is not None:
             break
