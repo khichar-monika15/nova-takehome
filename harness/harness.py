@@ -25,8 +25,8 @@ DEFAULT_STATE = ".state"
 
 
 def ingest(batch_dir: str, state_dir: str) -> None:
-    raise NotImplementedError(
-        f"ingest is not written yet: read the .eml files in {batch_dir} and keep what you learn under {state_dir}")
+    from audit.ingest import ingest as run_ingest
+    run_ingest(batch_dir, state_dir)
 
 
 def report(as_of: str, mode: str, state_dir: str) -> dict:
