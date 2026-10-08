@@ -38,7 +38,7 @@ def parse_date(s, fmt_: str | None = None) -> date | None:
     s = str(s).strip()
     if fmt_:
         try:
-            return datetime.strptime(s, fmt_).date()
+            return datetime.strptime(s, fmt_).date()  # noqa: DTZ007  date only
         except ValueError:
             return None
     m = _ISO.search(s)
@@ -46,7 +46,7 @@ def parse_date(s, fmt_: str | None = None) -> date | None:
         return date.fromisoformat(m.group(0))
     for f in _TEXT_DATE_FORMATS:
         try:
-            return datetime.strptime(s, f).date()
+            return datetime.strptime(s, f).date()  # noqa: DTZ007  date only
         except ValueError:
             continue
     return None

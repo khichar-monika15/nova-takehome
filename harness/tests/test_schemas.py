@@ -1,5 +1,4 @@
 import pytest
-
 from audit import schemas
 
 FORBIDDEN = {"minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems", "pattern", "$ref"}

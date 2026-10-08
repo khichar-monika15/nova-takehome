@@ -4,7 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from .. import terms
-from ..world import Doc, Invoice, Line, World, charge_code, ev, norm_id, norm_label
+from ..world import Invoice, Line, World, charge_code, ev, norm_id, norm_label
 from . import Candidate, dedupe, to_usd
 
 
@@ -45,6 +45,7 @@ def _candidate(inv: Invoice, lines: list[Line], evidence: list, verdict="finding
     return Candidate(cls="waived_but_billed", verdict=verdict, invoice_id=inv.id,
                      contract_id=inv.contract.id if inv.contract else None,
                      amount=usd if verdict == "finding" else None,
+                     native=amount if verdict == "finding" else None,
                      evidence=dedupe([ev(inv.doc, ln.item) for ln in lines] + evidence + fx_ev),
                      features={"pickup_source": "invoice", "judgment": True, "inr": inv.currency != "USD"}, **kw)
 

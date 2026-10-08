@@ -39,7 +39,7 @@ def test_second_ingest_makes_no_new_calls(monkeypatch, tmp_path):
 
 def test_failed_docs_are_retried_later(monkeypatch, tmp_path):
     bad = "batch_01/0003.eml#TX-US-2032-5394.pdf"
-    calls = fake_extract(monkeypatch, fail={bad})
+    fake_extract(monkeypatch, fail={bad})
     ingest.ingest(OVER, tmp_path)
     fake_extract(monkeypatch)
     retried = ingest.retry_failed(tmp_path)

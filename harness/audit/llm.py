@@ -90,7 +90,7 @@ def call_json(task: str, system: str, content: list, schema: dict, *, state_dir:
     for m in dict.fromkeys((model, FALLBACK_MODEL)):
         try:
             value = _ask(m, system, content, schema, max_tokens, effort, task, state_dir)
-        except Exception as e:  # the SDK already retried; one failed document must not stop the batch
+        except Exception as e:  # noqa: BLE001  the SDK already retried; one failed document must not stop the batch
             print(f"llm {task}: {m} failed: {type(e).__name__}: {e}", file=sys.stderr)
             value = None
         if value is not None:

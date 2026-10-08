@@ -46,12 +46,12 @@ def _cross_invoice(w: World) -> dict[str, Candidate]:
         amount = sum((ln.amount for _, ln, _ in rows), Decimal(0)) - _credited(w, inv)
         if amount <= 0:
             continue
-        usd, fx_ev, missing = to_usd(amount, inv)
+        usd, fx_ev, _ = to_usd(amount, inv)
         if usd is None:
             continue
         evidence = [ev(inv.doc, ln.item) for _, ln, _ in rows] + [ev(i0.doc, l0.item) for _, _, (i0, l0) in rows]
         out[key] = Candidate(cls="duplicate", verdict="finding", invoice_id=inv.id,
-                             contract_id=inv.contract.id if inv.contract else None, amount=usd,
+                             contract_id=inv.contract.id if inv.contract else None, amount=usd, native=amount,
                              evidence=dedupe(evidence + fx_ev), deciding_refs=[inv.doc.ref],
                              features={"pickup_source": "invoice", "judgment": False, "inr": inv.currency != "USD"})
     return out
@@ -89,6 +89,7 @@ def _resent_after_payment(w: World) -> dict[str, Candidate]:
             cover, ref = ask
             out[key] = Candidate(cls="duplicate", verdict="finding", invoice_id=again.id,
                                  contract_id=again.contract.id if again.contract else None, amount=usd,
+                                 native=again.total,
                                  evidence=dedupe([ev(cover, ref), ev(led_doc, row), *again.evidence(),
                                                   *copies[0].evidence(), *fx_ev]),
                                  deciding_refs=[cover.ref, led_doc.ref],

@@ -41,7 +41,7 @@ class Doc:
     email_ref: str
 
     @classmethod
-    def of(cls, r: dict) -> "Doc":
+    def of(cls, r: dict) -> Doc:
         return cls(ref=r["ref"], kind=r.get("kind") or "other", facts=r.get("facts") or {},
                    received_at=datetime.fromisoformat(r["received_at"]), sender_name=r.get("sender_name", ""),
                    sender_email=(r.get("sender_email") or "").lower(), pages=r.get("pages", []),
@@ -134,7 +134,7 @@ def charge_code(contract: Contract | None, label: str) -> str | None:
     n = norm_label(label)
     if n in table:
         return table[n]
-    starts = [k for k in table if n.startswith(k + " ") or n.startswith(k + ":")]
+    starts = [k for k in table if n.startswith((k + " ", k + ":"))]
     return table[max(starts, key=len)] if starts else None
 
 

@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from audit.money import D, cents, ceil_div, fmt, parse_date
+from audit.money import D, ceil_div, cents, fmt, parse_date
 
 
 def test_cents_rounds_half_up():
@@ -13,7 +13,7 @@ def test_D_strips_currency_and_thousand_separators():
     assert D("1,701.31") == Decimal("1701.31")
     assert D("USD 1259.23") == Decimal("1259.23")
     assert D("18.38%") == Decimal("18.38")
-    assert D(7) == Decimal("7")
+    assert D(7) == Decimal(7)
 
 
 def test_fmt_has_two_decimals():

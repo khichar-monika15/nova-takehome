@@ -11,7 +11,7 @@ GRADER = Path(__file__).resolve().parents[2] / "grader"
 if str(GRADER) not in sys.path:
     sys.path.insert(0, str(GRADER))
 
-import extract as gx  # noqa: E402  (grader/extract.py: the text the grader checks quotes against)
+import extract as gx
 
 
 @dataclass
@@ -43,8 +43,8 @@ def read_batch(batch_dir: Path) -> list[Doc]:
         sender_name, sender_email = parseaddr(str(msg["From"]))
         received = parsedate_to_datetime(str(msg["Date"])).astimezone(timezone.utc)
         subject = str(msg["Subject"] or "")
-        common = dict(email_ref=email_ref, received_at=received, sender_name=sender_name,
-                      sender_email=sender_email.lower(), subject=subject)
+        common = {"email_ref": email_ref, "received_at": received, "sender_name": sender_name,
+                  "sender_email": sender_email.lower(), "subject": subject}
         docs.append(Doc(ref=email_ref, name=f.name, kind_hint="email", pages=gx.pages_of(raw, "eml"),
                         is_scan=False, data=raw, **common))
         for name, data in gx.attachments(raw):

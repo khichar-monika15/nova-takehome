@@ -43,7 +43,7 @@ def _freight_kg(lines: list[Line], sh: Shipment | None) -> Decimal | None:
 def _price_group(w: World, inv: Invoice, sid: str | None, lines: list[Line], pick: int | None) -> Priced:
     c = inv.contract
     out = Priced()
-    pickup, source, pickup_ev = _pickup(w, inv, sid, lines)
+    pickup, _, pickup_ev = _pickup(w, inv, sid, lines)
     if pickup is None:
         return out
     sh = w.shipments.get(sid) if sid else None
@@ -202,7 +202,7 @@ def audit_invoice(w: World, inv: Invoice) -> Candidate | None:
         base.verdict, base.missing_doc = "cannot_determine", no_fx
         base.evidence = dedupe([e for p in priced for e in p.evidence])
         return base
-    base.amount = usd
+    base.amount, base.native = usd, total
     base.learned_at = next((p.learned_at for p in priced if p.learned_at), None)
     base.evidence = dedupe([e for p in priced for e in p.evidence] + fx_ev)
     return base

@@ -40,9 +40,7 @@ def _in_scope(fb: dict, day: date | None, **filters) -> bool:
         if k not in filters:
             return False
     start, end = parse_date(scope.get("valid_from")), parse_date(scope.get("valid_to"))
-    if day is not None and ((start and day < start) or (end and day > end)):
-        return False
-    return True
+    return not (day is not None and ((start and day < start) or (end and day > end)))
 
 
 def authorised(w: World, c: Contract, email: str, name: str, category: str, day: date | None) -> bool:
