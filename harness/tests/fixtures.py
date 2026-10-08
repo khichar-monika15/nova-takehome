@@ -94,8 +94,8 @@ def msa(cid="C-1", received="2031-11-25T09:00:00+00:00", **over):
                   {"code": "PEAK", "labels": ["Peak season surcharge", "PSS"], **clause()},
                   {"code": "LATE", "labels": ["Late fee", "Late payment fee"], **clause()}],
               "fx": [], "fx_update_rule": None}
-    return rec(f"batch_01/0001.eml#MSA-{cid}.pdf", "contract", {"terms": terms, "rates": rates, "tables": tables},
-               received=received)
+    return with_kinds(rec(f"batch_01/0001.eml#MSA-{cid}.pdf", "contract",
+                          {"terms": terms, "rates": rates, "tables": tables}, received=received))
 
 
 def line(shipment, pickup, label, lane, qty, unit, rate, amount, quote=None, page=1, refers=None):
@@ -134,3 +134,28 @@ def ledger(rows, ref="batch_01/0041.eml#ap.xlsx", received="2032-08-30T10:00:00+
             "paid_date": p, "quote": f"{i} | {d} | due {due} | USD {a} | {s} | {p or ''}".rstrip(" |"),
             "page": 1, "quote_ok": True} for i, d, due, a, s, p in rows]
     return rec(ref, "table", {"table_kind": "payment_ledger", "ledger": out}, received=received)
+
+
+KINDS = {"FRT": "freight", "FUEL": "fuel", "SEC": "security", "DG": "dangerous_goods", "DRYICE": "dry_ice",
+         "DLV": "delivery", "STOR": "storage", "CUSTOMS": "customs", "PEAK": "peak", "LATE": "late_fee",
+         "SPROG": "monthly_fee", "DUTY": "duty"}
+
+
+def with_kinds(contract_rec):
+    """Give every alias and accessorial row the charge kind the model returns."""
+    t = contract_rec["facts"]["tables"]
+    for row in t["aliases"] + t["accessorials"]:
+        row.setdefault("kind", KINDS.get(row["code"], "other"))
+    return contract_rec
+
+
+def renamed_codes(contract_rec):
+    """The same contract with the carrier's own code names, as a new world would print them."""
+    rename = {"FRT": "AIR", "FUEL": "FSC", "SEC": "SCR", "DG": "DGR", "DRYICE": "ICE", "DLV": "DEL", "STOR": "STO",
+              "CUSTOMS": "CUS", "PEAK": "PSS", "LATE": "LPF"}
+    t = with_kinds(contract_rec)["facts"]["tables"]
+    for row in t["aliases"] + t["accessorials"]:
+        row["code"] = rename.get(row["code"], row["code"])
+    for row in contract_rec["facts"]["rates"]["rows"]:
+        row["lane"] = row["lane"].replace("-", " to ")
+    return contract_rec

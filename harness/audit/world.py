@@ -1,6 +1,7 @@
 """Stage 2a: link the stored facts of every document received by as_of into one view."""
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -17,6 +18,32 @@ def norm_id(s: str) -> str:
 
 def norm_label(s: str) -> str:
     return " ".join((s or "").lower().split())
+
+
+_STATION = re.compile(r"[A-Z][A-Z0-9]{2,}")
+
+
+def norm_lane(s: str | None) -> str | None:
+    """'USTQM to INVKH', 'USTQM-INVKH' and 'USTQM INVKH' are one lane: ORIGIN-DESTINATION."""
+    if not s:
+        return None
+    codes = _STATION.findall(s.upper().replace(" TO ", " "))
+    return "-".join(codes[:2]) if len(codes) >= 2 else s.strip().upper()
+
+
+def _norm_lanes(kind: str, facts: dict) -> None:
+    """Rewrite every lane in a document's facts to ORIGIN-DESTINATION, so documents compare by station codes."""
+    if kind == "contract":
+        for row in facts.get("rates", {}).get("rows", []):
+            row["lane"] = norm_lane(row.get("lane"))
+        for ch in facts.get("terms", {}).get("amendment_changes", []):
+            ch["lanes"] = [norm_lane(x) for x in ch.get("lanes", [])]
+    elif kind == "email":
+        for n in facts.get("rate_notices", []):
+            n["lane"] = norm_lane(n.get("lane"))
+    elif kind == "invoice":
+        for ln in facts.get("lines", []):
+            ln["lane"] = norm_lane(ln.get("lane"))
 
 
 def dec(x) -> Decimal | None:
@@ -42,7 +69,9 @@ class Doc:
 
     @classmethod
     def of(cls, r: dict) -> Doc:
-        return cls(ref=r["ref"], kind=r.get("kind") or "other", facts=r.get("facts") or {},
+        facts = json.loads(json.dumps(r.get("facts") or {}))
+        _norm_lanes(r.get("kind") or "other", facts)
+        return cls(ref=r["ref"], kind=r.get("kind") or "other", facts=facts,
                    received_at=datetime.fromisoformat(r["received_at"]), sender_name=r.get("sender_name", ""),
                    sender_email=(r.get("sender_email") or "").lower(), pages=r.get("pages", []),
                    is_scan=r.get("is_scan", False), email_ref=r.get("email_ref", r["ref"].split("#")[0]))
@@ -123,6 +152,13 @@ class Contract:
             out.setdefault(norm_label(a["name"]), a["code"])
         return out
 
+    def kinds(self) -> dict[str, str]:
+        out = {}
+        for row in self.tables.get("aliases", []) + self.tables.get("accessorials", []):
+            if row.get("kind"):
+                out.setdefault(row["code"], row["kind"])
+        return out
+
     def accessorial(self, code: str) -> dict | None:
         return next((a for a in self.tables.get("accessorials", []) if a["code"] == code), None)
 
@@ -153,6 +189,7 @@ class Line:
     refers_to_invoice: str | None
     refers_to_period: str | None
     item: dict
+    kind: str | None = None
 
     @property
     def group(self) -> str:
@@ -245,8 +282,10 @@ def _lines(contract: Contract | None, f: dict) -> list[Line]:
         amount = dec(x.get("amount"))
         if amount is None:
             continue
+        code = charge_code(contract, x.get("label", ""))
         out.append(Line(idx=i, shipment=(x.get("shipment") or None), pickup_printed=parse_date(x.get("pickup_date")),
-                        label=x.get("label", ""), code=charge_code(contract, x.get("label", "")),
+                        label=x.get("label", ""), code=code,
+                        kind=contract.kinds().get(code) if contract and code else None,
                         lane=x.get("lane") or None, qty=dec(x.get("qty")), unit=x.get("unit", "other"),
                         rate=dec(x.get("rate")), amount=amount, refers_to_invoice=x.get("refers_to_invoice"),
                         refers_to_period=x.get("refers_to_period"), item=x))

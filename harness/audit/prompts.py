@@ -86,6 +86,12 @@ Copy each row's quote from its line in the table.""",
 - accessorials: each accessorial charge code, name, fee, and basis (per shipment, per kg, per day, per month, \
 percent); months lists the calendar month numbers when the charge applies only in some months (else empty).
 - aliases: for each charge code, every label the carrier may print for it (the code's own name included).
+- kind (on accessorials and aliases): what the charge is, whatever the carrier calls its code: freight (the base \
+air freight per kg), fuel (fuel or energy surcharge), security (security or screening surcharge), dangerous_goods, \
+dry_ice, delivery (delivery to the consignee), storage, customs (customs hold or examination), peak (seasonal \
+surcharge), monthly_fee (an account or programme fee per month), late_fee (late payment fee or overdue interest), \
+duty (import duty or disbursement), tax (sales tax, GST), margin (handling or forwarding margin), cost (carrier cost \
+pass-through), handling (special handling), other.
 - fx: exchange rates, INR per 1 USD, per month.
 - fx_update_rule: the sentence saying who issues rows for later months, if any.""",
 

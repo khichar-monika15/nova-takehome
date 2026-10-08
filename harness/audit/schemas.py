@@ -111,12 +111,14 @@ CONTRACT_RATES = obj(
                    rates=arr(obj(period_label=STR, rate=STR)), effective_from=NSTR, effective_to=NSTR)),
 )
 
+CHARGE_KINDS = ("freight", "fuel", "security", "dangerous_goods", "dry_ice", "delivery", "storage", "customs",
+                "peak", "monthly_fee", "late_fee", "duty", "tax", "margin", "cost", "handling", "other")
+
 CONTRACT_TABLES = obj(
     fuel=arr(cited(month=STR, pct=STR)),
-    accessorials=arr(cited(code=STR, name=STR, fee=STR, basis=enum("shipment", "kg", "day", "month", "percent",
-                                                                   "other"),
-                           months=arr(INT))),
-    aliases=arr(cited(code=STR, labels=arr(STR))),
+    accessorials=arr(cited(code=STR, name=STR, kind=enum(*CHARGE_KINDS), fee=STR,
+                           basis=enum("shipment", "kg", "day", "month", "percent", "other"), months=arr(INT))),
+    aliases=arr(cited(code=STR, kind=enum(*CHARGE_KINDS), labels=arr(STR))),
     fx=arr(cited(month=STR, inr_per_usd=STR)),
     fx_update_rule=CLAUSE,
 )

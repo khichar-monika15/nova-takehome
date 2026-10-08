@@ -52,3 +52,20 @@ def test_amendment_attaches_to_its_parent_contract():
     c = build([msa(), amd], AS_OF).contracts["C-1"]
     assert [a.ref for a in c.amendments] == ["batch_01/0002.eml#AMD-1.pdf"]
     assert c.msa.ref == "batch_01/0001.eml#MSA-C-1.pdf"
+
+
+def test_lanes_match_whatever_way_the_document_writes_them():
+    from audit.world import norm_lane
+    assert norm_lane("USTQM to INVKH") == "USTQM-INVKH"
+    assert norm_lane("USNBR-USTQM") == "USNBR-USTQM"
+    assert norm_lane("USNBR USTQM") == "USNBR-USTQM"
+    assert norm_lane("USNBR → USTQM") == "USNBR-USTQM"
+    assert norm_lane(None) is None
+
+
+def test_lines_get_the_charge_kind_the_contract_gives_their_code():
+    from fixtures import renamed_codes
+    inv = invoice("INV-K", "2032-01-02", [line("S1", "2031-12-20", "FSC", "AAA to BBB", "100", "percent_of_base",
+                                               "20.16", "20.16")])
+    got = build([renamed_codes(msa()), inv], AS_OF).invoices["INV-K"][0].lines[0]
+    assert (got.code, got.kind, got.lane) == ("FSC", "fuel", "AAA-BBB")
