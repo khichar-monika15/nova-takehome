@@ -21,6 +21,7 @@ class FakeClient:
 
 
 def use(monkeypatch, client):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
     monkeypatch.setattr(llm, "_client", lambda: client)
     monkeypatch.setattr(llm, "DEV_CACHE", None)
 
@@ -77,3 +78,49 @@ def test_an_exception_from_the_first_model_falls_back_instead_of_crashing(monkey
     use(monkeypatch, fake)
     assert llm.call_json("t", "sys", [{"type": "text", "text": "z"}], SCHEMA, state_dir=tmp_path) == {"a": 2}
     assert [c["model"] for c in fake.calls] == [llm.MODEL, llm.FALLBACK_MODEL]
+
+
+class FakeOpenAI:
+    def __init__(self, text='{"a": 3}', refusal=None):
+        self.calls = []
+        self.text, self.refusal = text, refusal
+        self.chat = SimpleNamespace(completions=self)
+
+    def create(self, **kw):
+        self.calls.append(kw)
+        msg = SimpleNamespace(content=self.text, refusal=self.refusal)
+        return SimpleNamespace(choices=[SimpleNamespace(message=msg, finish_reason="stop")], model=kw["model"],
+                               usage=SimpleNamespace(prompt_tokens=7, completion_tokens=3))
+
+
+def test_provider_prefers_anthropic_and_falls_back_to_openai(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
+    monkeypatch.setenv("OPENAI_API_KEY", "o")
+    assert llm.provider() == "anthropic"
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    assert llm.provider() == "openai"
+
+
+def test_openai_call_uses_strict_json_schema_and_converts_images(monkeypatch, tmp_path):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "o")
+    fake = FakeOpenAI()
+    monkeypatch.setattr(llm, "_openai_client", lambda: fake)
+    monkeypatch.setattr(llm, "DEV_CACHE", None)
+    content = [{"type": "text", "text": "page"},
+               {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": "QUJD"}}]
+    assert llm.call_json("invoice", "sys", content, SCHEMA, state_dir=tmp_path) == {"a": 3}
+    kw = fake.calls[0]
+    assert kw["model"] == llm.OPENAI_MODELS[llm.MODEL]
+    assert kw["response_format"]["json_schema"]["strict"] is True
+    assert kw["response_format"]["json_schema"]["schema"] == SCHEMA
+    assert kw["messages"][0] == {"role": "system", "content": "sys"}
+    assert kw["messages"][1]["content"][1] == {"type": "image_url", "image_url": {"url": "data:image/png;base64,QUJD"}}
+
+
+def test_openai_refusal_gives_none(monkeypatch, tmp_path):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "o")
+    monkeypatch.setattr(llm, "_openai_client", lambda: FakeOpenAI(text=None, refusal="no"))
+    monkeypatch.setattr(llm, "DEV_CACHE", None)
+    assert llm.call_json("t", "sys", [{"type": "text", "text": "r"}], SCHEMA, state_dir=tmp_path) is None
