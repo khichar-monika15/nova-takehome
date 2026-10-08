@@ -69,3 +69,17 @@ def test_lines_get_the_charge_kind_the_contract_gives_their_code():
                                                "20.16", "20.16")])
     got = build([renamed_codes(msa()), inv], AS_OF).invoices["INV-K"][0].lines[0]
     assert (got.code, got.kind, got.lane) == ("FSC", "fuel", "AAA-BBB")
+
+
+def test_a_signed_msa_replaces_an_unsigned_draft_received_first():
+    draft = msa(received="2031-11-01T09:00:00+00:00", signed_by_both=False)
+    draft["ref"] = "batch_01/0000.eml#DRAFT.pdf"
+    w = build([draft, msa()], AS_OF)
+    assert w.contracts["C-1"].msa.ref == "batch_01/0001.eml#MSA-C-1.pdf"
+
+
+def test_a_line_whose_label_is_not_in_annex_e_takes_the_kind_the_model_read():
+    item = line("S1", "2031-12-20", "Airport-to-airport carriage", "AAA-BBB", "100", "kg", "6.69", "669.00")
+    item["kind"] = "freight"
+    got = build([msa(), invoice("INV-L", "2032-01-02", [item])], AS_OF).invoices["INV-L"][0].lines[0]
+    assert (got.kind, got.code) == ("freight", "FRT")

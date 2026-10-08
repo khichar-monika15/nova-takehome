@@ -102,7 +102,9 @@ line, including lines that continue on later pages.
 - lines: one entry per charge line. shipment is the waybill number; pickup_date is the pickup or collection date \
 printed for that line. qty and unit: chargeable kg, number of shipments, days, months; for a percentage surcharge \
 (such as fuel) qty is the base amount it is charged on, rate is the percent and unit is percent_of_base. amount is \
-the line amount (negative for a credit). For a late-fee line, refers_to_invoice is the invoice it charges a fee on. \
+the line amount (negative for a credit). kind is what the line charges for, whatever its label says: freight, fuel, \
+security, dangerous_goods, dry_ice, delivery, storage, customs, peak, monthly_fee, late_fee, duty, tax, margin, cost, \
+handling or other. For a late-fee line, refers_to_invoice is the invoice it charges a fee on. \
 refers_to_period is the month or period a line or a credit covers, when printed.
 - credit: for a credit note, which invoice or period it credits (a quarter as YYYY-Qn, a contract year as CYn) and \
 what kind: rebate (a quarterly volume rebate), margin_step_down (a handling margin that stepped down), \

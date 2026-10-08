@@ -161,3 +161,17 @@ def test_extension_email_from_someone_without_notices_authority_does_not_move_th
                     contract_changes=[change])
     assert [x.contract_id for x in expiry.run(build([c, outsider], date(2034, 2, 28)))] == ["C-1"]
     assert expiry.run(build([c, insider], date(2034, 2, 28))) == []
+
+
+def test_inr_late_fee_converts_once_per_finding():
+    base = msa(currency="INR", late_fee={"rate_pct": "1.98", "grace_days": "0", "compounding": True,
+                                         "clause": clause()})
+    base["facts"]["tables"]["fx"] = [{"month": "2032-09", "inr_per_usd": "7.00", **clause("2032-09 7.00", 11)}]
+    target = invoice("INV-A", "2032-06-01", [], due="2032-07-16", total="100.00", currency="INR")
+    fee_inv = invoice("INV-B", "2032-09-01", [fee_line("INV-A", "0.10", 13), fee_line("INV-A", "0.10", 14)],
+                      currency="INR")
+    led = ledger([("INV-A", "2032-06-01", "2032-07-16", "100.00", "paid", "2032-07-10")],
+                 received="2032-09-20T10:00:00+00:00")
+    got = late_fees.run(build([base, target, fee_inv, led], date(2032, 9, 30)), [])
+    # 0.20 INR / 7.00 = 0.0286 -> 0.03 USD once; per line it would be 0.01 + 0.01
+    assert [(c.invoice_id, c.amount) for c in got] == [("INV-B", Decimal("0.03"))]

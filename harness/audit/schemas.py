@@ -133,7 +133,7 @@ INVOICE = obj(
     total=NSTR,
     total_quote=CLAUSE,
     marked_copy_or_reminder=BOOL,
-    lines=arr(cited(shipment=NSTR, pickup_date=NSTR, label=STR, lane=NSTR, qty=NSTR,
+    lines=arr(cited(shipment=NSTR, pickup_date=NSTR, label=STR, kind=enum(*CHARGE_KINDS), lane=NSTR, qty=NSTR,
                     unit=enum("kg", "shipment", "day", "month", "percent_of_base", "other"), rate=NSTR, amount=STR,
                     refers_to_invoice=NSTR, refers_to_period=NSTR)),
     credit=obj(credits_invoice=NSTR, period=NSTR,

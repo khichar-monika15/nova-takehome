@@ -248,7 +248,8 @@ def _add_contract(w: World, d: Doc) -> None:
     t = d.facts.get("terms", {})
     if t.get("doc_type") == "msa" or (t and t.get("doc_type") not in ("amendment", "extension")):
         c = _contract_for(w, t.get("contract_id"), create=True)
-        if c and c.msa is None:
+        unsigned_held = c and c.msa and not c.msa.facts.get("terms", {}).get("signed_by_both", True)
+        if c and (c.msa is None or (unsigned_held and t.get("signed_by_both", True))):
             c.msa = d
         return
     for cid in (t.get("parent_contract_id"), t.get("contract_id")):
@@ -283,9 +284,13 @@ def _lines(contract: Contract | None, f: dict) -> list[Line]:
         if amount is None:
             continue
         code = charge_code(contract, x.get("label", ""))
+        kinds = contract.kinds() if contract else {}
+        kind = kinds.get(code) if code else None
+        if kind is None and x.get("kind") not in (None, "", "other", "none"):
+            kind = x["kind"]
+            code = code or next((k for k, v in kinds.items() if v == kind), None)
         out.append(Line(idx=i, shipment=(x.get("shipment") or None), pickup_printed=parse_date(x.get("pickup_date")),
-                        label=x.get("label", ""), code=code,
-                        kind=contract.kinds().get(code) if contract and code else None,
+                        label=x.get("label", ""), code=code, kind=kind,
                         lane=x.get("lane") or None, qty=dec(x.get("qty")), unit=x.get("unit", "other"),
                         rate=dec(x.get("rate")), amount=amount, refers_to_invoice=x.get("refers_to_invoice"),
                         refers_to_period=x.get("refers_to_period"), item=x))

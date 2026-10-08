@@ -88,19 +88,23 @@ def _not_owed(w: World) -> list[Candidate]:
             excess = ln.amount - remaining
             if excess <= 0:
                 continue
-            usd, fx_ev, _ = to_usd(excess, inv)
-            if usd is None:
-                continue
-            prev = out.get(inv.key)
-            amount = usd + (prev.amount if prev else 0)
-            out[inv.key] = Candidate(
-                cls="late_fee_not_owed", verdict="finding", invoice_id=inv.id, contract_id=contract.id,
-                amount=amount, evidence=dedupe([ev(inv.doc, ln.item), *due_ev, ev(led[0], led[1]),
-                                                ev(contract.msa, lf.get("clause")) if contract.msa else None,
-                                                *fx_ev]),
-                deciding_refs=[inv.doc.ref, led[0].ref],
-                features={"pickup_source": "invoice", "judgment": False, "inr": inv.currency != "USD"})
-    return list(out.values())
+            found = out.setdefault(inv.key, {"inv": inv, "native": Decimal(0), "evidence": [], "contract": contract,
+                                             "refs": [inv.doc.ref, led[0].ref]})
+            found["native"] += excess
+            found["evidence"] += [ev(inv.doc, ln.item), *due_ev, ev(led[0], led[1]),
+                                  ev(contract.msa, lf.get("clause")) if contract.msa else None]
+    items = []
+    for f in out.values():
+        inv = f["inv"]
+        usd, fx_ev, _ = to_usd(f["native"], inv)  # converted once per finding
+        if usd is None:
+            continue
+        items.append(Candidate(cls="late_fee_not_owed", verdict="finding", invoice_id=inv.id,
+                               contract_id=f["contract"].id, amount=usd, native=f["native"],
+                               evidence=dedupe(f["evidence"] + fx_ev), deciding_refs=f["refs"],
+                               features={"pickup_source": "invoice", "judgment": False,
+                                         "inr": inv.currency != "USD"}))
+    return items
 
 
 def _unpaid(w: World, inv: Invoice) -> tuple[bool, list[dict | None]]:
