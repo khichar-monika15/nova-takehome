@@ -1,0 +1,17 @@
+name: overcharge of exactly 5,000.00 on one statement goes to a person (autonomous)
+mailbox: evals/mailboxes/threshold_5000
+as_of: "2041-08-31"
+mode: autonomous
+expect:
+  key: {invoice_id: VCU-4108-0390, class: overcharge}
+  verdict: finding
+  amount_usd: "5000.00"
+  action: human_review
+why: >-
+  The four consignments were picked up 3 to 9 August 2041 (tracking): Rate period II, August fuel 22.40%. Each weighs
+  400 kg or more, but the statement bills the 150 to 399.5 kg rate. USTQM to INVKH 1,200.0 kg: freight 6576.00 -
+  5784.00 = 792.00, fuel 1473.02 - 1295.62 = 177.40, sum 969.40. USNBR to INVKH 1,205.5 kg: freight 7003.96 - 6051.61
+  = 952.35, fuel 1568.89 - 1355.56 = 213.33, sum 1165.68. USTQM to INVKH 1,447.5 kg: freight 7932.30 - 6976.95 =
+  955.35, fuel 1776.84 - 1562.84 = 214.00, sum 1169.35. USNBR to INVKH 1,753.5 kg: freight 10187.84 - 8802.57 =
+  1385.27, fuel 2282.08 - 1971.78 = 310.30, sum 1695.57. Total 969.40 + 1165.68 + 1169.35 + 1695.57 = 5000.00. The
+  glossary sends 5,000.00 or more on one invoice to human_review in both modes, and exactly 5,000.00 is included.

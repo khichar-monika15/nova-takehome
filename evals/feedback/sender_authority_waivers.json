@@ -1,0 +1,46 @@
+{
+ "schema_version": "1.0",
+ "world": "EVAL-VB",
+ "after_batch": "batch_01",
+ "decided_at": "2041-08-02T09:30:00Z",
+ "decided_by": {
+  "name": "Dashiell Moreau",
+  "role": "Head of Payables",
+  "entity": "BRK-US"
+ },
+ "items": [
+  {
+   "item_id": "fb-vb-01",
+   "finding_key": {
+    "invoice_id": "VCU-4107-0350",
+    "class": "waived_but_billed"
+   },
+   "solicited": false,
+   "decision": "confirm",
+   "fact": {
+    "type": "sender_authority",
+    "subject": {
+     "person": "Fergus Oyelowo",
+     "party": "VCS-US"
+    },
+    "value": {
+     "categories": [
+      "waivers"
+     ]
+    },
+    "evidence": "Veltraine delegation letter of 1 July 2041, seen by AP"
+   },
+   "scope": {
+    "kind": "standing",
+    "applies_to": {
+     "contract_id": "VB-FA-2041-07",
+     "person": "Fergus Oyelowo",
+     "category": "waivers"
+    },
+    "valid_from": "2041-07-01",
+    "valid_to": null
+   },
+   "note": "Veltraine delegated waiver authority on VB-FA-2041-07 to Fergus Oyelowo from 1 July 2041. The delegation covers waivers only."
+  }
+ ]
+}

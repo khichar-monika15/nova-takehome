@@ -1,0 +1,18 @@
+name: waiver seen only as quoted text inside a colleague's forward
+mailbox: evals/mailboxes/waiver_quoted_forward
+as_of: "2041-04-30"
+mode: supervised
+expect:
+  key: {invoice_id: VCU-4104-0241, class: waived_but_billed}
+  verdict: cannot_determine
+  action: draft:request_document
+  missing_doc:
+    name: Benedikt Saelens
+    holder: {party: VCS-US, person: Benedikt Saelens, role: Credit Control Lead}
+why: >-
+  The only waiver for VX40415530 is quoted inside the forward from Pilar Okonjo of 2041-04-17. Pilar is not on
+  Schedule 1. The quoted sender, Benedikt Saelens, is the Schedule 1 waivers contact, so his original email of
+  16 April 2041 would decide the key, and the mailbox does not hold it. Clause 14.3 and the glossary give quoted text
+  no authority on its own. The missing document is that original email. The holder is the sender, because he is on
+  Schedule 1 for waivers. The glossary waiver section names the Key Account Manager (Corwin Haldane) instead. Both
+  are VCS-US, and the runner checks only the name. With the original, the finding is the Door delivery line, 74.50.

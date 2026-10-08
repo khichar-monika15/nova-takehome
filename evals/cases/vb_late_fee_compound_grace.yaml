@@ -1,0 +1,16 @@
+name: compounded late fee with a grace period, billed for one month too many
+mailbox: evals/mailboxes/late_fee_compound_grace
+as_of: "2041-04-30"
+mode: supervised
+expect:
+  key: {invoice_id: VCU-4104-0230, class: late_fee_not_owed}
+  verdict: finding
+  amount_usd: "152.42"
+  action: draft:dispute
+why: >-
+  The payables ledger shows VCU-4101-0098 due 2041-02-19 and cleared 2041-03-24: days_late = 33. That is more than
+  the 5 grace days of clause 10.2, so a fee is owed. Months = ceil(33 / 30) = 2; grace does not reduce days_late.
+  Clause 10.4 compounds. Month 1 = 1.75% x 8412.60 = 147.2205, rounded 147.22. Month 2 = 1.75% x (8412.60 + 147.22)
+  = 1.75% x 8559.82 = 149.79685, rounded 149.80. Fee owed 147.22 + 149.80 = 297.02. The statement bills 449.44 for
+  3 months. Not owed 449.44 - 297.02 = 152.42. Without compounding the answer is 155.00; with grace taken off
+  days_late first (28 days, 1 month) it is 302.22. Both are wrong.

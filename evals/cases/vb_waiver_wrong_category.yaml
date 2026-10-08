@@ -1,0 +1,11 @@
+name: waiver from a Schedule 1 person who has no waiver category
+mailbox: evals/mailboxes/waiver_wrong_category
+as_of: "2041-04-30"
+mode: supervised
+expect:
+  key: {invoice_id: VCU-4104-0233, class: waived_but_billed}
+  verdict: no_finding
+why: >-
+  Corwin Haldane writes "We waive the Delivery to consignee charge on consignment VX40412218." Schedule 1 names him
+  for notices only. Clause 11.1 lets only an Authorised Person for waivers waive a charge. His waiver has no
+  authority, so the Door delivery line (74.50) is owed. A place on Schedule 1 for another category is not enough.

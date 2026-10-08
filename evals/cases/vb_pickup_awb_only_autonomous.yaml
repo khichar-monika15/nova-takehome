@@ -1,0 +1,15 @@
+name: pickup date only from the air waybill fails the unattended test
+mailbox: evals/mailboxes/pickup_awb_only
+as_of: "2041-06-30"
+mode: autonomous
+expect:
+  key: {invoice_id: VCU-4106-0311, class: overcharge}
+  verdict: finding
+  amount_usd: "40.18"
+  action: human_review
+why: >-
+  The mailbox has no tracking export and no "picked up" email, so the pickup date (9 June 2041) comes from the air
+  waybill. Check 1 of the unattended-action test fails, so autonomous mode holds the dispute for a person. Rate period
+  I, June fuel 21.75%. 132.0 kg on USKVW to INPLD is in band 50 to 149.5 kg: 6.85. Billed 7.10 x 132 = 937.20, fuel
+  21.75% x 937.20 = 203.841, rounded 203.84. Correct 6.85 x 132 = 904.20, fuel 21.75% x 904.20 = 196.6635, rounded
+  196.66. Overcharge 33.00 + 7.18 = 40.18.

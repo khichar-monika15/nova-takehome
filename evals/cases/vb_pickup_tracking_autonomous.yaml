@@ -1,0 +1,13 @@
+name: same overcharge with a tracking export passes the unattended test
+mailbox: evals/mailboxes/pickup_tracking
+as_of: "2041-06-30"
+mode: autonomous
+expect:
+  key: {invoice_id: VCU-4106-0311, class: overcharge}
+  verdict: finding
+  amount_usd: "40.18"
+  action: execute:dispute
+why: >-
+  Same statement and arithmetic as the waybill-only case: 40.18. Here the tracking export records PICKED_UP on
+  2041-06-09. The evidence is complete, nothing conflicts, 40.18 is under 5,000.00, a dispute can be undone, and the
+  terms come from the signed agreement. Autonomous mode sends the dispute: execute:dispute.

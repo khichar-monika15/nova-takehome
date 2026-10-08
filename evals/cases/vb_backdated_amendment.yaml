@@ -1,0 +1,17 @@
+name: backdated signed amendment lowers the rate for a statement from batch_01
+mailbox: evals/mailboxes/backdated_amendment
+as_of: "2041-05-31"
+mode: supervised
+expect:
+  key: {invoice_id: VCU-4103-0226, class: overcharge}
+  verdict: finding
+  amount_usd: "173.60"
+  action: draft:dispute
+why: >-
+  Statement VCU-4103-0226 (batch_01) bills VX40316650, 260.0 kg on USNBR to INVKH, picked up 2041-03-14, at the
+  Annex A Rate period I rate 5.70. At batch_01 that is correct. Amendment No. 1, signed by both parties on 5 May 2041
+  and received in batch_02, is effective from 1 March 2041 and sets 5.15 for 150 to 399.5 kg on that lane. The
+  pickup is after the effective date, and clause 14.1 ranks the amendment first. Billed 5.70 x 260 = 1482.00, fuel
+  21.40% x 1482.00 = 317.148, rounded 317.15. Correct 5.15 x 260 = 1339.00, fuel 21.40% x 1339.00 = 286.546, rounded
+  286.55. Overcharge (1482.00 - 1339.00) + (317.15 - 286.55) = 143.00 + 30.60 = 173.60. The key exists only because
+  of the backdated document, so the item has retro true and no supersedes.

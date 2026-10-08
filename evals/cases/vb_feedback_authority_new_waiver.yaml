@@ -1,0 +1,15 @@
+name: feedback gives a carrier person waiver authority, then he waives a charge
+mailbox: evals/mailboxes/feedback_waiver_authority
+as_of: "2041-08-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/sender_authority_waivers.json}
+expect:
+  key: {invoice_id: VCU-4108-0377, class: waived_but_billed}
+  verdict: finding
+  amount_usd: "74.50"
+  action: draft:dispute
+why: >-
+  Fergus Oyelowo is not on Schedule 1. The feedback after batch_01 confirms his authority for waivers on
+  VB-FA-2041-07, standing from 2041-07-01. In batch_02 he writes "We waive the Door delivery charge on consignment
+  VX40808215". Statement VCU-4108-0377 bills "Last-leg delivery" on VX40808215 for 74.50, and Annex E maps that
+  label to DLV, the delivery charge. Waived but billed: 74.50.

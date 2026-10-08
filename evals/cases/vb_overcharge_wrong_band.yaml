@@ -1,0 +1,15 @@
+name: wrong weight band on a new statement layout, fuel follows the freight base
+mailbox: evals/mailboxes/overcharge_band
+as_of: "2041-03-31"
+mode: supervised
+expect:
+  key: {invoice_id: VCU-4103-0217, class: overcharge}
+  verdict: finding
+  amount_usd: "206.38"
+  action: draft:dispute
+why: >-
+  The tracking export gives pickup 2041-03-02 for VX40311852, so Rate period I and March fuel 21.40% apply.
+  212.5 kg is in the band "150 to 399.5 kg" (5.35). The statement bills 6.15, the rate of the band "50 to 149.5 kg".
+  Billed: freight 6.15 x 212.5 = 1306.875, rounded 1306.88; fuel 21.40% x 1306.88 = 279.67; sum 1586.55.
+  Correct: freight 5.35 x 212.5 = 1136.875, rounded 1136.88; fuel 21.40% x 1136.88 = 243.29; sum 1380.17.
+  Overcharge 1586.55 - 1380.17 = 206.38. Every other line on the statement is correct.

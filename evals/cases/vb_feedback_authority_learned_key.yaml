@@ -1,0 +1,15 @@
+name: feedback turns the earlier waiver from the same person into a finding
+mailbox: evals/mailboxes/feedback_waiver_authority
+as_of: "2041-08-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/sender_authority_waivers.json}
+expect:
+  key: {invoice_id: VCU-4107-0350, class: waived_but_billed}
+  verdict: finding
+  amount_usd: "74.50"
+  action: draft:dispute
+why: >-
+  At batch_01 this key is no_finding: Fergus Oyelowo waived the Door delivery charge on VX40707120 on 2041-07-09 with
+  no Schedule 1 authority. The feedback confirms his waiver authority from 2041-07-01, which covers that email.
+  Statement VCU-4107-0350 bills Door delivery 74.50 on VX40707120. After the feedback the key is a finding of 74.50
+  and carries learned_at (fb-vb-01).

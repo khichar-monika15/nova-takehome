@@ -1,0 +1,12 @@
+name: weight on the upper edge of a band, priced correctly
+mailbox: evals/mailboxes/band_edge_clean
+as_of: "2041-03-31"
+mode: supervised
+expect:
+  key: {invoice_id: VCU-4103-0221, class: overcharge}
+  verdict: no_finding
+why: >-
+  149.5 kg is the upper edge of the band "50 to 149.5 kg", so the Rate period I rate 6.15 is correct (pickup
+  2041-03-04 from tracking). Freight 6.15 x 149.5 = 919.425, rounded half up 919.43, as billed. Half-even rounding
+  gives 919.42 and a false overcharge. Fuel 21.40% x 919.43 = 196.76, as billed. Screening 0.14 x 149.5 = 20.93 and
+  delivery 74.50 match Annex D. A harness that puts 149.5 kg in the next band (5.35) reports a false overcharge.

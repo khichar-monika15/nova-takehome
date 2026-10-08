@@ -1,0 +1,18 @@
+name: INR overcharge in a month that Annex F does not cover
+mailbox: evals/mailboxes/inr_missing_fx_row
+as_of: "2041-07-31"
+mode: supervised
+expect:
+  key: {invoice_id: VCI-4107-0031, class: overcharge}
+  verdict: cannot_determine
+  action: draft:request_document
+  missing_doc:
+    name: Annex F update
+    holder: {party: VCS-IN, person: Kavitha Mendonca, role: Treasury Officer}
+why: >-
+  Pickup 2041-06-28 (tracking): Rate period I, June fuel 20.20%. 180.0 kg on INVKH to USTQM is in band 150 to 399.5
+  kg: 472.00 INR. The statement bills 548.00. Billed 98,640.00 + 19,925.28 = 118,565.28 INR. Correct 472.00 x 180 =
+  84,960.00 and fuel 20.20% x 84,960.00 = 17,161.92, sum 102,121.92 INR. Overcharge 16,443.36 INR. The USD amount
+  needs the Annex F rate for July 2041, the month of the statement date (9 July 2041). Annex F stops at June 2041 and
+  says later rates are issued "as an Annex F update" by the treasury Authorised Person: Kavitha Mendonca, VCS-IN.
+  The June rate (84.31, the pickup month) gives 195.03 USD, which is wrong.

@@ -1,0 +1,14 @@
+name: one-off waiver for April, April fee billed on a statement dated in May
+mailbox: evals/mailboxes/waiver_one_off_month
+as_of: "2041-06-30"
+mode: supervised
+expect:
+  key: {invoice_id: VCM-2041-04, class: waived_but_billed}
+  verdict: finding
+  amount_usd: "285.00"
+  action: draft:dispute
+why: >-
+  Benedikt Saelens (Schedule 1: waivers) writes on 2041-04-08 "As a one-off, we waive the Account service fee for
+  April 2041." Statement VCM-2041-04, dated 2 May 2041, bills "April 2041 | Account maintenance | 1 month | 285.00 |
+  285.00". Annex E maps Account maintenance to ACC, the Account service fee. The waiver names that service month, so
+  the line is waived but billed: 285.00. The statement date is in May, so a match on statement month fails.

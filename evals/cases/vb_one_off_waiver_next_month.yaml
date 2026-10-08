@@ -1,0 +1,11 @@
+name: the same fee billed for the next month is owed
+mailbox: evals/mailboxes/waiver_one_off_month
+as_of: "2041-06-30"
+mode: supervised
+expect:
+  key: {invoice_id: VCM-2041-05, class: waived_but_billed}
+  verdict: no_finding
+why: >-
+  The waiver covers April 2041 only ("As a one-off"; "The fee applies as usual for every other month"). Clause 11.2
+  limits a waiver to the months it names. Statement VCM-2041-05 bills the May 2041 fee of 285.00, which is owed.
+  Treating the April waiver as permanent is one of the five mistakes that cap the score at 40.

@@ -1,0 +1,12 @@
+name: signed extension in batch_02 moves the notice deadline out of the window
+mailbox: evals/mailboxes/expiry_extension
+as_of: "2041-12-15"
+mode: supervised
+expect:
+  key: {contract_id: VB-FA-2041-07, class: expiry}
+  verdict: no_finding
+why: >-
+  Without the extension the notice deadline 2041-12-31 is 16 days after as_of. Extension Agreement No. 1, signed by
+  both parties and received 2041-12-08, moves the end of the initial term to 30 September 2042 and keeps clause 2.3.
+  The new notice deadline is 2042-09-30 minus 90 days = 2042-07-02, 199 days after as_of. The expiry key must be
+  absent. The runner passes no_finding when the key is absent or listed as no_finding.

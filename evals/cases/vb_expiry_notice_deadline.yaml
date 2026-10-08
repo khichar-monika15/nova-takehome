@@ -1,0 +1,14 @@
+name: auto-renewing agreement whose non-renewal notice deadline is inside 60 days
+mailbox: evals/mailboxes/expiry_notice_deadline
+as_of: "2041-11-30"
+mode: supervised
+expect:
+  key: {contract_id: VB-FA-2041-07, class: expiry}
+  verdict: finding
+  deadline: "2041-12-31"
+  action: internal:alert
+why: >-
+  Clause 2.2 ends the initial term on 31 March 2042. Clause 2.3 renews the agreement unless a party gives notice of
+  non-renewal no later than 90 days before the last day of the term: 2042-03-31 minus 90 days = 2041-12-31. The
+  operative date is that notice deadline, 31 days after as_of, inside the 60-day window. The end date is 121 days
+  after as_of and alone gives no alert.

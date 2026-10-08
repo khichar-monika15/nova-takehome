@@ -1,0 +1,13 @@
+name: waiver authority from feedback does not cover a rate notice from the same person
+mailbox: evals/mailboxes/feedback_rate_notice
+as_of: "2041-08-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/sender_authority_waivers.json}
+expect:
+  key: {invoice_id: VCU-4108-0381, class: overcharge}
+  verdict: no_finding
+why: >-
+  The feedback gives Fergus Oyelowo authority for waivers only. His tariff notice of 2041-08-11 (USTQM to INVKH, 150
+  to 399.5 kg: 4.90) is a rates decision, so it has no authority and Annex A still governs. Pickup 2041-08-18
+  (tracking): Rate period II, 175.0 kg, rate 5.48. Billed 5.48 x 175 = 959.00 and fuel 22.40% x 959.00 = 214.82 are
+  correct. A harness that stretches the feedback to rates claims 124.24.
