@@ -94,3 +94,13 @@ def test_a_statement_spreadsheet_goes_to_invoice_extraction(monkeypatch, tmp_pat
                                     "invoice": {"invoice_id": "TX-ST-203411", "lines": []}})
     out = facts.extract_doc(doc, tmp_path)
     assert out["kind"] == "invoice" and seen == ["table", "classify", "invoice"]
+
+
+def test_a_failed_mapping_or_classification_leaves_the_document_for_a_retry(monkeypatch, tmp_path):
+    from audit.docs import read_batch
+    docs = list(read_batch(REPO / "data/scenarios/batch_01"))
+    sheet = next(d for d in docs if d.name.startswith("ap-register"))
+    pdf = next(d for d in docs if d.kind_hint == "pdf")
+    fake_calls(monkeypatch, {"table": None, "classify": None})
+    assert facts.extract_doc(sheet, tmp_path)["ok"] is False
+    assert facts.extract_doc(pdf, tmp_path)["ok"] is False

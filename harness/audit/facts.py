@@ -73,11 +73,12 @@ def _repair_quotes(node, doc: Doc) -> None:
             _repair_quotes(v, doc)
 
 
-def classify(doc: Doc, state_dir: Path, deadline: float | None = None) -> str:
+def classify(doc: Doc, state_dir: Path, deadline: float | None = None) -> str | None:
+    """-> the document kind, or None when the call failed (the document is then retried later)."""
     if doc.kind_hint == "email":
         return "email"
     out = _call("classify", doc, state_dir, CLASSIFY_CHARS, deadline)
-    return out["kind"] if out else "other"
+    return out["kind"] if out else None
 
 
 # ---- spreadsheets: the model maps the columns, code reads every row ---------------------------------------------------
@@ -105,14 +106,14 @@ def _cell(cells, idx):
     return cells[idx] if idx is not None and 0 <= idx < len(cells) else ""
 
 
-def _table_facts(doc: Doc, state_dir: Path, deadline: float | None = None) -> dict:
+def _table_facts(doc: Doc, state_dir: Path, deadline: float | None = None) -> dict | None:
     sheets = _sheet_rows(doc.data)
     content = [{"type": "text", "text": f"Spreadsheet: {doc.name}\n{_table_preview(sheets)}"},
                {"type": "text", "text": prompts.TASK["table"]}]
     m = call_json("table", prompts.SYSTEM, content, schemas.TABLE, state_dir=state_dir, model=MODEL_FOR["table"],
                   deadline=deadline)
     if not m:
-        return {"table_kind": "other"}
+        return None
     sheet_no = m["sheet"] if 1 <= m["sheet"] <= len(sheets) else 1
     rows = sheets[sheet_no - 1][m["header_row"] + 1:]
     col, fmt_ = m["columns"], m["date_format"]
@@ -146,10 +147,14 @@ def extract_doc(doc: Doc, state_dir: Path, deadline: float | None = None) -> dic
     records = None
     if doc.kind_hint == "xlsx":  # records decide many keys, so a spreadsheet is mapped first, not classified
         records = _table_facts(doc, state_dir, deadline)
+        if records is None:
+            return {"kind": None, "facts": {}, "ok": False}
         if records.get("table_kind") in ("tracking", "payment_ledger"):
             _repair_quotes(records, doc)
             return {"kind": "table", "facts": records, "ok": True}
     kind = classify(doc, state_dir, deadline)
+    if kind is None:
+        return {"kind": None, "facts": {}, "ok": False}
     if kind == "email":
         f = _call("email", doc, state_dir, None, deadline)
     elif kind == "contract":
