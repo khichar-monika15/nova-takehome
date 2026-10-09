@@ -2,7 +2,7 @@
 
 ## How to run it
 
-Run `make setup`, then set `ANTHROPIC_API_KEY` in the shell. The grader commands work as the brief describes: `make grade`, `make sheet`, `make eval` and `make validate`. The program needs no packages beyond `harness/requirements.txt`. When `ANTHROPIC_API_KEY` is set, every model call goes to Claude: `claude-opus-5-5` for reading, `claude-haiku-5-5` for the document type, and `claude-sonnet-5-5` as a second try. When only `OPENAI_API_KEY` is set, the calls go to OpenAI instead. That path is for local development only, and `harness/requirements-dev.txt` installs the `openai` package for it. For the unit tests, run `.venv/bin/python -m pytest harness/tests -q`.
+Run `make setup`, then set `ANTHROPIC_API_KEY` in the shell. The grader commands work as the brief describes: `make grade`, `make sheet`, `make eval` and `make validate`. The program needs no packages beyond `harness/requirements.txt`. When `ANTHROPIC_API_KEY` is set, every model call goes to Claude: `claude-opus-5-5` for reading, and `claude-sonnet-5-5` for the document type and as a second try. When only `OPENAI_API_KEY` is set, the calls go to OpenAI instead. That path is for local development only, and `harness/requirements-dev.txt` installs the `openai` package for it. For the unit tests, run `.venv/bin/python -m pytest harness/tests -q`.
 
 ## What works
 
@@ -10,7 +10,7 @@ The practice card is 99.5 out of 100, and every hard gate is clear. Detection F1
 
 ## What doesn't
 
-The local runs used `gpt-5.5`, because no Anthropic key was available. The Claude path sends the same prompts and schemas through the same code, but it has not run end to end. The confidence weights are set by hand, and the practice set cannot test AUROC because every item there is right. The margin step-down credit is not built. Every rule follows GLOSSARY.md, and no rule uses a practice name, lane or file.
+The local runs used `gpt-5.5`, because no Anthropic key was available. The Claude path sends the same prompts and schemas through the same code, but it has not run against the live API. A reviewer sent its requests through the installed SDK with a fake transport and checked their shape. A clean checkout with an invalid key fails each call cleanly and still prints a valid report. The schemas have no union types, because Claude allows at most 16 of them in one request. If the API refuses a schema, the call asks for plain JSON instead. The confidence weights are set by hand, and the practice set cannot test AUROC because every item there is right. The margin step-down credit is not built. Every rule follows GLOSSARY.md, and no rule uses a practice name, lane or file.
 
 ## The eval case that caught a bug
 

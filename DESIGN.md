@@ -16,7 +16,7 @@ Confidence starts from the verdict: 0.92 for a finding, 0.80 for a conflict, 0.7
 
 ## People in the loop
 
-A conflict goes to a person as `escalate`. An outbound remedy of $5,000.00 or more on one invoice or credit key is `human_review` in both modes. The sum covers every finding on that invoice. In supervised mode, every other outbound action is a draft. When the unattended test passes in autonomous mode, the program executes a dispute, a credit claim or a document request. Otherwise the item goes to `human_review`. The test needs cited evidence and no open conflict on the same contract and lane. For an overcharge, it also needs a pickup date from tracking or a carrier email. A final guard turns any `execute:` in supervised mode into a draft. Items carry no addresses, so text in an email cannot redirect a dispute.
+A conflict goes to a person as `escalate`. An outbound remedy of $5,000.00 or more on one invoice or credit key is `human_review` in both modes. The sum covers every finding on that invoice. In supervised mode, every other outbound action is a draft. When the unattended test passes in autonomous mode, the program executes a dispute, a credit claim or a document request. Otherwise the item goes to `human_review`. The test needs cited evidence, a recipient that Schedule 1 names, and no open conflict on the same contract and lane. For an overcharge, it also needs a pickup date from tracking or a carrier email. A final guard turns any `execute:` in supervised mode into a draft. Items carry no addresses, so text in an email cannot redirect a dispute.
 
 ## Feedback
 
@@ -28,7 +28,7 @@ Each report recomputes every key from all documents received by its date. A hist
 
 ## Cost
 
-The practice and exam mailboxes hold 249 documents and took 391 model calls. Per 1,000 documents, that is about 1.83 million input tokens and 0.64 million output tokens. At Claude Opus 5.5 prices ($4 and $20 per million) plus 30% more tokens for its tokenizer, the cost is about $26 per 1,000 documents. Classification on Claude Haiku 5.5 adds less than $0.10. With 8 parallel calls, the model time is about 14 minutes per 1,000 documents. These numbers come from the usage log that `llm.py` writes for every call. The local runs used `gpt-5.5`, so the Claude time is an estimate.
+The practice and exam mailboxes hold 249 documents and took 391 model calls. Per 1,000 documents, that is about 1.83 million input tokens and 0.64 million output tokens. At Claude Opus 5.5 prices ($4 and $20 per million) plus 30% more tokens for its tokenizer, the cost is about $26 per 1,000 documents. Classification on Claude Sonnet 5.5 reads only the first 2,500 characters of each document and adds about $1.70. With 8 parallel calls, the model time is about 14 minutes per 1,000 documents. These numbers come from the usage log that `llm.py` writes for every call. The local runs used `gpt-5.5`, so the Claude time is an estimate.
 
 ## What I'd do next
 

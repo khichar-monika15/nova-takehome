@@ -67,3 +67,30 @@ def test_tracking_table_rows_are_read_in_code_with_grader_quotes(monkeypatch, tm
     assert rows == [{"shipment": "TE56915687", "event": "picked_up", "date": "2031-12-25", "station": "USE2",
                      "reason": "-", "quote": "TE56915687 | PICKED_UP | 2031-12-25 | USE2 | -", "page": 1,
                      "quote_ok": True}]
+
+
+LEDGER_MAP = {"table_kind": "payment_ledger", "sheet": 1, "header_row": 0,
+              "columns": {"shipment": -1, "event": -1, "event_date": -1, "station": -1, "reason": -1,
+                          "invoice_id": 0, "invoice_date": 1, "due_date": 2, "amount": 3, "status": 4,
+                          "paid_date": 5},
+              "date_format": "", "paid_status_words": ["paid"],
+              "event_names": {"picked_up": "", "arrived_facility": "", "delivered": "", "collected_by_consignee": ""}}
+
+
+def test_a_spreadsheet_is_mapped_as_records_whatever_the_classifier_says(monkeypatch, tmp_path):
+    from audit.docs import read_batch
+    doc = next(d for d in read_batch(REPO / "data/scenarios/batch_01") if d.name.startswith("ap-register"))
+    seen = fake_calls(monkeypatch, {"classify": {"kind": "other", "reason": ""}, "table": LEDGER_MAP})
+    out = facts.extract_doc(doc, tmp_path)
+    assert out["kind"] == "table" and len(out["facts"]["ledger"]) > 10
+    assert "classify" not in seen
+
+
+def test_a_statement_spreadsheet_goes_to_invoice_extraction(monkeypatch, tmp_path):
+    from audit.docs import read_batch
+    doc = next(d for d in read_batch(REPO / "data/scenarios/batch_01") if d.name.startswith("TX-ST"))
+    other = {**LEDGER_MAP, "table_kind": "other"}
+    seen = fake_calls(monkeypatch, {"table": other, "classify": {"kind": "invoice", "reason": ""},
+                                    "invoice": {"invoice_id": "TX-ST-203411", "lines": []}})
+    out = facts.extract_doc(doc, tmp_path)
+    assert out["kind"] == "invoice" and seen == ["table", "classify", "invoice"]

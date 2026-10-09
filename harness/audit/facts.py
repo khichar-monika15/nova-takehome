@@ -8,12 +8,12 @@ from pathlib import Path
 
 from . import prompts, schemas
 from .docs import Doc, gx, page_png
-from .llm import FALLBACK_MODEL, MODEL, SMALL_MODEL, call_json, run_parallel
+from .llm import FALLBACK_MODEL, MODEL, call_json, run_parallel
 from .money import parse_date
 from .quotes import locate
 
 MODEL_FOR = {
-    "classify": SMALL_MODEL,
+    "classify": FALLBACK_MODEL,
     "email": MODEL,
     "contract_terms": MODEL,
     "contract_rates": MODEL,
@@ -143,6 +143,12 @@ def _table_facts(doc: Doc, state_dir: Path, deadline: float | None = None) -> di
 # ---- one document -----------------------------------------------------------------------------------------------------
 def extract_doc(doc: Doc, state_dir: Path, deadline: float | None = None) -> dict:
     """-> {"kind": ..., "facts": {...}, "ok": bool}. No model call starts once the deadline is too close."""
+    records = None
+    if doc.kind_hint == "xlsx":  # records decide many keys, so a spreadsheet is mapped first, not classified
+        records = _table_facts(doc, state_dir, deadline)
+        if records.get("table_kind") in ("tracking", "payment_ledger"):
+            _repair_quotes(records, doc)
+            return {"kind": "table", "facts": records, "ok": True}
     kind = classify(doc, state_dir, deadline)
     if kind == "email":
         f = _call("email", doc, state_dir, None, deadline)
@@ -152,7 +158,7 @@ def extract_doc(doc: Doc, state_dir: Path, deadline: float | None = None) -> dic
                            deadline=deadline or time.monotonic() + 600)
         f = None if any(g is None for g in got) else dict(zip(("terms", "rates", "tables"), got))
     elif kind == "table":
-        f = _table_facts(doc, state_dir, deadline)
+        f = records if records is not None else _table_facts(doc, state_dir, deadline)
     elif kind in ("invoice", "awb", "dgd"):
         f = _call(kind, doc, state_dir, None, deadline)
     else:
