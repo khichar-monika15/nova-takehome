@@ -144,14 +144,6 @@ def _table_facts(doc: Doc, state_dir: Path, deadline: float | None = None) -> di
 # ---- one document -----------------------------------------------------------------------------------------------------
 def extract_doc(doc: Doc, state_dir: Path, deadline: float | None = None) -> dict:
     """-> {"kind": ..., "facts": {...}, "ok": bool}. No model call starts once the deadline is too close."""
-    records = None
-    if doc.kind_hint == "xlsx":  # records decide many keys, so a spreadsheet is mapped first, not classified
-        records = _table_facts(doc, state_dir, deadline)
-        if records is None:
-            return {"kind": None, "facts": {}, "ok": False}
-        if records.get("table_kind") in ("tracking", "payment_ledger"):
-            _repair_quotes(records, doc)
-            return {"kind": "table", "facts": records, "ok": True}
     kind = classify(doc, state_dir, deadline)
     if kind is None:
         return {"kind": None, "facts": {}, "ok": False}
@@ -163,7 +155,7 @@ def extract_doc(doc: Doc, state_dir: Path, deadline: float | None = None) -> dic
                            deadline=deadline or time.monotonic() + 600)
         f = None if any(g is None for g in got) else dict(zip(("terms", "rates", "tables"), got))
     elif kind == "table":
-        f = records if records is not None else _table_facts(doc, state_dir, deadline)
+        f = _table_facts(doc, state_dir, deadline)
     elif kind in ("invoice", "awb", "dgd"):
         f = _call(kind, doc, state_dir, None, deadline)
     else:

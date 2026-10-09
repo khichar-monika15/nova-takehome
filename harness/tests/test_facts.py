@@ -77,23 +77,13 @@ LEDGER_MAP = {"table_kind": "payment_ledger", "sheet": 1, "header_row": 0,
               "event_names": {"picked_up": "", "arrived_facility": "", "delivered": "", "collected_by_consignee": ""}}
 
 
-def test_a_spreadsheet_is_mapped_as_records_whatever_the_classifier_says(monkeypatch, tmp_path):
-    from audit.docs import read_batch
-    doc = next(d for d in read_batch(REPO / "data/scenarios/batch_01") if d.name.startswith("ap-register"))
-    seen = fake_calls(monkeypatch, {"classify": {"kind": "other", "reason": ""}, "table": LEDGER_MAP})
-    out = facts.extract_doc(doc, tmp_path)
-    assert out["kind"] == "table" and len(out["facts"]["ledger"]) > 10
-    assert "classify" not in seen
-
-
 def test_a_statement_spreadsheet_goes_to_invoice_extraction(monkeypatch, tmp_path):
     from audit.docs import read_batch
     doc = next(d for d in read_batch(REPO / "data/scenarios/batch_01") if d.name.startswith("TX-ST"))
-    other = {**LEDGER_MAP, "table_kind": "other"}
-    seen = fake_calls(monkeypatch, {"table": other, "classify": {"kind": "invoice", "reason": ""},
+    seen = fake_calls(monkeypatch, {"classify": {"kind": "invoice", "reason": ""},
                                     "invoice": {"invoice_id": "TX-ST-203411", "lines": []}})
     out = facts.extract_doc(doc, tmp_path)
-    assert out["kind"] == "invoice" and seen == ["table", "classify", "invoice"]
+    assert out["kind"] == "invoice" and seen == ["classify", "invoice"]
 
 
 def test_a_failed_mapping_or_classification_leaves_the_document_for_a_retry(monkeypatch, tmp_path):
