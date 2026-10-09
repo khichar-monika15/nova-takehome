@@ -6,7 +6,7 @@ from decimal import Decimal
 
 from .. import terms
 from ..money import cents
-from ..world import Invoice, Line, Shipment, World, dec, ev
+from ..world import Invoice, Line, Shipment, World, dec, ev, norm_lane
 from . import Candidate, dedupe, to_usd
 
 CONDITIONAL_KINDS = {"dangerous_goods", "dry_ice", "delivery", "customs"}
@@ -20,6 +20,7 @@ class Priced:
     conflicts: list[list[tuple[Decimal, list[dict]]]] = field(default_factory=list)
     missing: dict | None = None
     judgment: bool = False
+    lane_from_record: bool = False
     learned_at: dict | None = None
 
 
@@ -48,7 +49,7 @@ def _price_group(w: World, inv: Invoice, sid: str | None, lines: list[Line], pic
         return out
     sh = w.shipments.get(sid) if sid else None
     kg = _freight_kg(lines, sh)
-    lane = next((ln.lane for ln in lines if ln.lane), None)
+    lane, out.lane_from_record = _lane(c, next((ln.lane for ln in lines if ln.lane), None), sh)
     correct_freight: Decimal | None = None
 
     def billed_wrong(ln: Line, correct: Decimal | None, *evidence):
@@ -99,6 +100,26 @@ def _price_group(w: World, inv: Invoice, sid: str | None, lines: list[Line], pic
     if out.diffs:
         out.evidence.append(pickup_ev)
     return out
+
+
+def _lane(c, printed: str | None, sh: Shipment | None) -> tuple[str | None, bool]:
+    """The invoice's lane when the contract prices it; otherwise the lane the shipment's own records show (a scan or
+    a layout can garble the printed lane). -> (lane, taken from a record)."""
+    known = c.lanes()
+    if printed in known or sh is None:
+        return printed, False
+    candidates = []
+    if sh.awb:
+        candidates.append(f"{sh.awb[1].get('origin', '')} {sh.awb[1].get('destination', '')}")
+    start = sh.first_event("picked_up")
+    end = sh.first_event("delivered", "collected_by_consignee", "arrived_facility")
+    if start and end:
+        candidates.append(f"{start.get('station') or ''} {end.get('station') or ''}")
+    for cand in candidates:
+        lane = norm_lane(cand)
+        if lane in known:
+            return lane, True
+    return printed, False
 
 
 def _condition_ev(sh: Shipment | None) -> list[dict | None]:
@@ -177,6 +198,7 @@ def audit_invoice(w: World, inv: Invoice) -> Candidate | None:
     base.features = {"pickup_source": max(pickups, key=("tracking", "status_email", "awb", "invoice").index)
                      if pickups else "invoice",
                      "judgment": any(p.judgment for p in priced), "inr": inv.currency != "USD",
+                     "lane_from_record": any(p.lane_from_record for p in priced),
                      "lanes": {ln.lane for ln in inv.lines if ln.lane}}
     base.deciding_refs = [inv.doc.ref]
     if missing:

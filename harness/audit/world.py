@@ -141,7 +141,13 @@ class Contract:
         return self.msa
 
     def lanes(self) -> set[str]:
-        return {r["lane"] for r in self.rates.get("rows", [])}
+        """Every lane that some rate source of this contract prices."""
+        found = {r["lane"] for r in self.rates.get("rows", [])}
+        for a in self.amendments:
+            found |= {r["lane"] for r in a.facts.get("rates", {}).get("rows", [])}
+            for ch in a.facts.get("terms", {}).get("amendment_changes", []):
+                found |= set(ch.get("lanes", []))
+        return found | {n.get("lane") for _, n in self.notices}
 
     def aliases(self) -> dict[str, str]:
         out = {}

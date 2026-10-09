@@ -133,3 +133,14 @@ def test_waiver_seen_only_quoted_is_cannot_determine_asking_the_key_account_mana
                             dlv_invoice()], AS_OF))
     assert [(c.invoice_id, c.verdict) for c in got] == [("INV-30", "cannot_determine")]
     assert got[0].missing_doc["holder"]["person"] == "Wes Waiver"
+
+
+def test_a_misread_lane_is_taken_from_the_waybill_of_the_shipment():
+    awb = rec("batch_01/0003.eml#AWB-S1.pdf", "awb",
+              {"shipment": "S1", "executed_date": "2031-12-25", "origin": "AAA", "destination": "BBB", "pieces": "1",
+               "actual_kg": "240.6", "chargeable_kg": "241", "master_shipment": "", "house_shipments": [],
+               "nature": "", "handling": "", **clause("AIR WAYBILL S1 Origin AAA Destination BBB", 1)})
+    w = build([msa(), oc_invoice(lane="AA-BBB"), awb, tracking([("S1", "picked_up", "2031-12-25", "AAA")])], AS_OF)
+    got = by_key(overcharge.run(w))["INV-1"]
+    assert got.amount == Decimal("196.92")
+    assert got.features["lane_from_record"] is True

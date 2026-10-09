@@ -15,6 +15,8 @@ def score(c: Candidate) -> float:
         p -= 0.07
     if f.get("inr"):
         p -= 0.05
+    if f.get("lane_from_record"):
+        p -= 0.05
     if not c.evidence:
         p -= 0.3
     if c.learned_at:
