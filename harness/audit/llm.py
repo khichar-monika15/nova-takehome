@@ -178,7 +178,7 @@ def call_json(task: str, system: str, content: list, schema: dict, *, state_dir:
     which = provider()
     ask = _ask_openai if which == "openai" else _ask
     names = {"openai": OPENAI_MODELS, "bedrock": BEDROCK_MODELS}.get(which, {})
-    models = [names.get(m, m) for m in (model, FALLBACK_MODEL)]
+    models = [names.get(m, m) for m in (model, FALLBACK_MODEL, MODEL)]
     key = _key(system, content, schema, effort)
     paths = [state_dir / "llm" / f"{key}.json"] + ([DEV_CACHE / f"{key}.json"] if DEV_CACHE else [])
     hit = _read(paths)

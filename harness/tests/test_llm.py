@@ -187,3 +187,23 @@ def test_bedrock_is_used_when_only_a_bedrock_key_exists_and_maps_models_to_opus(
     assert fake.calls[0]["output_config"]["format"]["schema"] == SCHEMA
     monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
     assert llm.provider() == "anthropic"
+
+
+class FailsUnlessOpus(FakeClient):
+    def create(self, **kw):
+        self.calls.append(kw)
+        if kw["model"] != llm.MODEL:
+            err = RuntimeError("model not found")
+            err.status_code = 404
+            raise err
+        return SimpleNamespace(stop_reason="end_turn", content=[SimpleNamespace(type="text", text='{"a": 6}')],
+                               usage=SimpleNamespace(input_tokens=1, output_tokens=1, cache_read_input_tokens=0),
+                               model=kw["model"])
+
+
+def test_a_call_on_the_mid_model_falls_back_to_opus_last(monkeypatch, tmp_path):
+    fake = FailsUnlessOpus([])
+    use(monkeypatch, fake)
+    assert llm.call_json("classify", "sys", [{"type": "text", "text": "c"}], SCHEMA, state_dir=tmp_path,
+                         model=llm.FALLBACK_MODEL) == {"a": 6}
+    assert [c["model"] for c in fake.calls] == [llm.FALLBACK_MODEL, llm.MODEL]
