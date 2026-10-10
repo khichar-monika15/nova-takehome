@@ -130,3 +130,9 @@ dates), or other.
 - event_names: the exact event value used for pickup, arrival at a facility, delivery by the carrier, and \
 collection by the consignee.""",
 }
+
+# Large schemas are split into parts that compile; each part reads the same instructions and fills its own fields.
+for _part in ("email_main", "email_records"):
+    TASK[_part] = TASK["email"]
+for _part in ("contract_dates", "contract_credits", "contract_rules", "contract_people"):
+    TASK[_part] = TASK["contract_terms"]

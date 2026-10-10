@@ -25,8 +25,8 @@ def test_schema_fits_structured_output_limits(name):
 
 def test_every_kind_has_a_schema_and_a_prompt():
     from audit import prompts
-    for kind in ("classify", "email", "contract_terms", "contract_rates", "contract_tables", "invoice", "awb",
-                 "dgd", "table"):
+    for kind in ("classify", "email_main", "email_records", "contract_dates", "contract_credits", "contract_rules",
+                 "contract_people", "contract_rates", "contract_tables", "invoice", "awb", "dgd", "table"):
         assert kind in schemas.ALL
         assert kind in prompts.TASK
 

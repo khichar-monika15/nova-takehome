@@ -22,12 +22,13 @@ def fake_calls(monkeypatch, replies):
     return seen
 
 
-def test_email_goes_to_the_email_task(monkeypatch, tmp_path):
-    seen = fake_calls(monkeypatch, {"email": {"intent": "invoice_cover", "waivers": []}})
+def test_email_runs_two_parts_and_merges_them(monkeypatch, tmp_path):
+    seen = fake_calls(monkeypatch, {"email_main": {"intent": "invoice_cover", "waivers": []},
+                                    "email_records": {"statuses": [], "rate_notices": []}})
     out = facts.extract_doc(docs_by_ref()["batch_01/0003.eml"], tmp_path)
-    assert seen == ["email"]
+    assert sorted(seen) == ["email_main", "email_records"]
     assert out["kind"] == "email"
-    assert out["facts"]["intent"] == "invoice_cover"
+    assert out["facts"]["intent"] == "invoice_cover" and out["facts"]["statuses"] == []
 
 
 def test_invoice_quotes_are_repaired_to_page_text(monkeypatch, tmp_path):
@@ -42,14 +43,19 @@ def test_invoice_quotes_are_repaired_to_page_text(monkeypatch, tmp_path):
     assert got["quote_ok"] is True
 
 
-def test_contract_runs_three_calls_and_merges_them(monkeypatch, tmp_path):
+def test_contract_runs_its_parts_and_merges_the_terms(monkeypatch, tmp_path):
     seen = fake_calls(monkeypatch, {"classify": {"kind": "contract", "reason": ""},
-                                    "contract_terms": {"contract_id": "C-1"},
+                                    "contract_dates": {"contract_id": "C-1"},
+                                    "contract_credits": {"rebate": {"applies": False}},
+                                    "contract_rules": {"rules": {}},
+                                    "contract_people": {"schedule1": []},
                                     "contract_rates": {"rows": []},
                                     "contract_tables": {"fuel": []}})
     out = facts.extract_doc(docs_by_ref()["batch_01/0002.eml#MSA-TBX-US-EXP-E60.pdf"], tmp_path)
-    assert sorted(seen) == ["classify", "contract_rates", "contract_tables", "contract_terms"]
-    assert out["facts"]["terms"]["contract_id"] == "C-1"
+    assert sorted(seen) == ["classify", "contract_credits", "contract_dates", "contract_people", "contract_rates",
+                            "contract_rules", "contract_tables"]
+    assert out["facts"]["terms"] == {"contract_id": "C-1", "rebate": {"applies": False}, "rules": {},
+                                     "schedule1": []}
     assert out["facts"]["rates"] == {"rows": []}
 
 

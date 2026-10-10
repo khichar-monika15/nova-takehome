@@ -14,8 +14,12 @@ from .quotes import locate
 
 MODEL_FOR = {
     "classify": FALLBACK_MODEL,
-    "email": MODEL,
-    "contract_terms": MODEL,
+    "email_main": MODEL,
+    "email_records": MODEL,
+    "contract_dates": MODEL,
+    "contract_credits": MODEL,
+    "contract_rules": MODEL,
+    "contract_people": MODEL,
     "contract_rates": MODEL,
     "contract_tables": MODEL,
     "invoice": MODEL,
@@ -142,18 +146,25 @@ def _table_facts(doc: Doc, state_dir: Path, deadline: float | None = None) -> di
 
 
 # ---- one document -----------------------------------------------------------------------------------------------------
+def _parts(tasks: tuple, doc: Doc, state_dir: Path, deadline: float | None) -> list | None:
+    """Run the calls of a split schema in parallel; None when any part fails, so the document is retried."""
+    got = run_parallel([lambda t=t: _call(t, doc, state_dir, None, deadline) for t in tasks], workers=len(tasks),
+                       deadline=deadline or time.monotonic() + 600)
+    return None if any(g is None for g in got) else got
+
+
 def extract_doc(doc: Doc, state_dir: Path, deadline: float | None = None) -> dict:
     """-> {"kind": ..., "facts": {...}, "ok": bool}. No model call starts once the deadline is too close."""
     kind = classify(doc, state_dir, deadline)
     if kind is None:
         return {"kind": None, "facts": {}, "ok": False}
     if kind == "email":
-        f = _call("email", doc, state_dir, None, deadline)
+        got = _parts(("email_main", "email_records"), doc, state_dir, deadline)
+        f = None if got is None else {**got[0], **got[1]}
     elif kind == "contract":
-        parts = ("contract_terms", "contract_rates", "contract_tables")
-        got = run_parallel([lambda t=t: _call(t, doc, state_dir, None, deadline) for t in parts], workers=3,
-                           deadline=deadline or time.monotonic() + 600)
-        f = None if any(g is None for g in got) else dict(zip(("terms", "rates", "tables"), got))
+        got = _parts((*schemas.TERMS_PARTS, "contract_rates", "contract_tables"), doc, state_dir, deadline)
+        f = None if got is None else {"terms": {k: v for g in got[:4] for k, v in g.items()}, "rates": got[4],
+                                      "tables": got[5]}
     elif kind == "table":
         f = _table_facts(doc, state_dir, deadline)
     elif kind in ("invoice", "awb", "dgd"):

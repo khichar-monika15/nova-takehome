@@ -177,10 +177,31 @@ TABLE = obj(
     event_names=obj(picked_up=NSTR, arrived_facility=NSTR, delivered=NSTR, collected_by_consignee=NSTR),
 )
 
+def part(schema: dict, *keys: str) -> dict:
+    """A smaller schema with some fields of a larger one: Claude refuses a grammar that compiles too large."""
+    return obj(**{k: schema["properties"][k] for k in keys})
+
+
+EMAIL_PARTS = {
+    "email_main": part(EMAIL, "intent", "contract_id", "waivers", "quoted_waivers", "extensions", "invoice_refs"),
+    "email_records": part(EMAIL, "rate_notices", "statuses", "customs_holds", "contract_changes",
+                          "instructions_to_automation"),
+}
+TERMS_PARTS = {
+    "contract_dates": part(CONTRACT_TERMS, "doc_type", "contract_id", "amendment_ref", "parent_contract_id",
+                           "signed_by_both", "dated", "effective_date", "end_date", "term", "auto_renews",
+                           "renewal_term_months", "non_renewal_notice_days", "renewal", "currency", "parties",
+                           "payment_days", "payment", "late_fee"),
+    "contract_credits": part(CONTRACT_TERMS, "rebate", "improvement_credit", "margin_step_down", "qualifying_spend",
+                             "chargeable_weight_divisor", "chargeable_weight_round_to_kg", "storage_free_days"),
+    "contract_rules": part(CONTRACT_TERMS, "rules"),
+    "contract_people": part(CONTRACT_TERMS, "schedule1", "amendment_changes"),
+}
+
 ALL = {
     "classify": CLASSIFY,
-    "email": EMAIL,
-    "contract_terms": CONTRACT_TERMS,
+    **EMAIL_PARTS,
+    **TERMS_PARTS,
     "contract_rates": CONTRACT_RATES,
     "contract_tables": CONTRACT_TABLES,
     "invoice": INVOICE,
