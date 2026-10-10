@@ -1,7 +1,8 @@
 """One JSON-schema model call, cached on disk by content hash.
 
-Claude is the provider whenever ANTHROPIC_API_KEY is set, which the grader always does. OpenAI is only a local
-development fallback, used when no Anthropic key exists and OPENAI_API_KEY does.
+Claude is the provider whenever ANTHROPIC_API_KEY is set, which the grader always does. For local development
+without an Anthropic key, AWS_BEARER_TOKEN_BEDROCK sends the same Claude requests through Amazon Bedrock, and
+OPENAI_API_KEY falls back to OpenAI.
 """
 from __future__ import annotations
 
@@ -19,18 +20,32 @@ SMALL_MODEL = "claude-haiku-5-5"
 REQUEST_TIMEOUT_S = 240
 MIN_CALL_S = 30
 OPENAI_MODELS = {MODEL: "gpt-5.5", FALLBACK_MODEL: "gpt-5.5", SMALL_MODEL: "gpt-5.4-mini"}
+BEDROCK_MODELS = {MODEL: "anthropic.claude-opus-5-5", FALLBACK_MODEL: "anthropic.claude-opus-5-5",
+                  SMALL_MODEL: "anthropic.claude-opus-5-5"}
 
 _REPO = Path(__file__).resolve().parents[2]
 DEV_CACHE: Path | None = _REPO / ".work" / "llm_cache" if (_REPO / ".work").is_dir() else None
 
 _shared = None
 _shared_openai = None
+_shared_bedrock = None
 
 
 def provider() -> str:
     if os.environ.get("ANTHROPIC_API_KEY"):
         return "anthropic"
+    if os.environ.get("AWS_BEARER_TOKEN_BEDROCK"):
+        return "bedrock"
     return "openai" if os.environ.get("OPENAI_API_KEY") else "anthropic"
+
+
+def _bedrock_client():
+    global _shared_bedrock
+    if _shared_bedrock is None:
+        from anthropic import AnthropicBedrockMantle
+        _shared_bedrock = AnthropicBedrockMantle(aws_region=os.environ.get("AWS_REGION", "us-east-1"),
+                                                 max_retries=1, timeout=REQUEST_TIMEOUT_S)
+    return _shared_bedrock
 
 
 def _client():
@@ -112,7 +127,7 @@ def _json_in(text: str):
 
 def _ask(model: str, system: str, content: list, schema: dict, max_tokens: int, effort: str, task: str,
          state_dir: Path, timeout: float | None = None):
-    client = _with_timeout(_client(), timeout)
+    client = _with_timeout(_bedrock_client() if provider() == "bedrock" else _client(), timeout)
     t0 = time.monotonic()
     try:
         resp = client.messages.create(
@@ -160,9 +175,10 @@ def call_json(task: str, system: str, content: list, schema: dict, *, state_dir:
     """-> the parsed JSON object, or None when both models refuse, return unparseable text, or the deadline
     (time.monotonic()) leaves too little time for a call."""
     state_dir = Path(state_dir)
-    use_openai = provider() == "openai"
-    ask = _ask_openai if use_openai else _ask
-    models = [OPENAI_MODELS.get(m, m) for m in (model, FALLBACK_MODEL)] if use_openai else [model, FALLBACK_MODEL]
+    which = provider()
+    ask = _ask_openai if which == "openai" else _ask
+    names = {"openai": OPENAI_MODELS, "bedrock": BEDROCK_MODELS}.get(which, {})
+    models = [names.get(m, m) for m in (model, FALLBACK_MODEL)]
     key = _key(system, content, schema, effort)
     paths = [state_dir / "llm" / f"{key}.json"] + ([DEV_CACHE / f"{key}.json"] if DEV_CACHE else [])
     hit = _read(paths)

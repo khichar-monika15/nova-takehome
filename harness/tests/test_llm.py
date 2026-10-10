@@ -22,6 +22,7 @@ class FakeClient:
 
 def use(monkeypatch, client):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test")
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
     monkeypatch.setattr(llm, "_client", lambda: client)
     monkeypatch.setattr(llm, "DEV_CACHE", None)
 
@@ -96,6 +97,7 @@ class FakeOpenAI:
 def test_provider_prefers_anthropic_and_falls_back_to_openai(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
     monkeypatch.setenv("OPENAI_API_KEY", "o")
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
     assert llm.provider() == "anthropic"
     monkeypatch.delenv("ANTHROPIC_API_KEY")
     assert llm.provider() == "openai"
@@ -104,6 +106,7 @@ def test_provider_prefers_anthropic_and_falls_back_to_openai(monkeypatch):
 def test_openai_call_uses_strict_json_schema_and_converts_images(monkeypatch, tmp_path):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "o")
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
     fake = FakeOpenAI()
     monkeypatch.setattr(llm, "_openai_client", lambda: fake)
     monkeypatch.setattr(llm, "DEV_CACHE", None)
@@ -121,6 +124,7 @@ def test_openai_call_uses_strict_json_schema_and_converts_images(monkeypatch, tm
 def test_openai_refusal_gives_none(monkeypatch, tmp_path):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "o")
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
     monkeypatch.setattr(llm, "_openai_client", lambda: FakeOpenAI(text=None, refusal="no"))
     monkeypatch.setattr(llm, "DEV_CACHE", None)
     assert llm.call_json("t", "sys", [{"type": "text", "text": "r"}], SCHEMA, state_dir=tmp_path) is None
@@ -130,6 +134,7 @@ def test_dev_cache_written_by_one_provider_is_read_by_the_other(monkeypatch, tmp
     monkeypatch.setattr(llm, "DEV_CACHE", tmp_path / "dev")
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("OPENAI_API_KEY", "o")
+    monkeypatch.delenv("AWS_BEARER_TOKEN_BEDROCK", raising=False)
     monkeypatch.setattr(llm, "_openai_client", lambda: FakeOpenAI(text='{"a": 9}'))
     content = [{"type": "text", "text": "same document"}]
     assert llm.call_json("t", "sys", content, SCHEMA, state_dir=tmp_path / "s1") == {"a": 9}
@@ -166,3 +171,19 @@ def test_no_call_is_started_when_the_deadline_is_too_close(monkeypatch, tmp_path
     assert llm.call_json("t", "sys", [{"type": "text", "text": "late"}], SCHEMA, state_dir=tmp_path,
                          deadline=time.monotonic() + 5) is None
     assert fake.calls == []
+
+
+def test_bedrock_is_used_when_only_a_bedrock_key_exists_and_maps_models_to_opus(monkeypatch, tmp_path):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "b")
+    assert llm.provider() == "bedrock"
+    fake = FakeClient([("end_turn", '{"a": 4}')])
+    monkeypatch.setattr(llm, "_bedrock_client", lambda: fake)
+    monkeypatch.setattr(llm, "DEV_CACHE", None)
+    assert llm.call_json("t", "sys", [{"type": "text", "text": "b"}], SCHEMA, state_dir=tmp_path,
+                         model=llm.SMALL_MODEL) == {"a": 4}
+    assert fake.calls[0]["model"] == "anthropic.claude-opus-5-5"
+    assert fake.calls[0]["output_config"]["format"]["schema"] == SCHEMA
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "a")
+    assert llm.provider() == "anthropic"
