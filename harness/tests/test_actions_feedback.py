@@ -184,3 +184,17 @@ def test_a_malformed_feedback_item_is_skipped():
               "fact": {"value": {"amount_usd": "USD 212.40"}}}]
     out = feedback.apply([c], items)
     assert len(out) == 1 and out[0].amount in (Decimal("10.00"), Decimal("212.40"))
+
+
+def test_one_off_authority_changes_only_its_own_key():
+    from test_rules_invoice import dlv_invoice
+    fb = [{"item_id": "fb-6", "batch": "batch_01", "decision": "confirm",
+           "finding_key": {"invoice_id": "INV-30", "class": "waived_but_billed"},
+           "fact": {"type": "sender_authority", "subject": {"person": "Kim Key", "party": "CAR-US"},
+                    "value": {"categories": ["waivers"]}},
+           "scope": {"kind": "one_off", "applies_to": {"contract_id": "C-1", "person": "Kim Key",
+                                                       "category": "waivers"},
+                     "valid_from": "2031-12-01", "valid_to": None}}]
+    mail = waiver_mail(("Kim Key", "kim@carrier.example"), shipments=("S1", "S2"))
+    got = waiver.run(build([msa(), mail, dlv_invoice("S1", "INV-30"), dlv_invoice("S2", "INV-31")], AS_OF, fb))
+    assert [c.invoice_id for c in got if c.verdict == "finding"] == ["INV-30"]

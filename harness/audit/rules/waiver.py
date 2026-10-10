@@ -61,9 +61,10 @@ def _own_waivers(w: World, found: dict) -> None:
             for inv, lines in _targets(w, wv):
                 c = inv.contract
                 day = mail.received_at.date()
-                if c is None or not terms.authorised(w, c, mail.sender_email, mail.sender_name, "waivers", day):
+                if c is None or not terms.authorised(w, c, mail.sender_email, mail.sender_name, "waivers", day,
+                                                     invoice_id=inv.id):
                     continue
-                learned = terms.authority_learned(w, c, mail.sender_name, "waivers", day)
+                learned = terms.authority_learned(w, c, mail.sender_name, "waivers", day, invoice_id=inv.id)
                 cand = _candidate(inv, lines, [ev(mail, wv), terms.schedule1_evidence(c, mail.sender_name),
                                                terms.rule_evidence(c, "waivers")],
                                   learned_at=learned, deciding_refs=[mail.ref, inv.doc.ref])

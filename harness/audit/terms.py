@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 
 from .money import parse_date
-from .world import Contract, Doc, World, dec, ev
+from .world import Contract, Doc, World, dec, ev, norm_id
 
 
 @dataclass
@@ -33,6 +33,10 @@ def _feedback_items(w: World, fact_type: str) -> list[dict]:
 
 def _in_scope(fb: dict, day: date | None, **filters) -> bool:
     scope = fb.get("scope", {})
+    if scope.get("kind") == "one_off":  # a one-off decision changes its own key and nothing else
+        key = norm_id((fb.get("finding_key") or {}).get("invoice_id") or "")
+        if not key or norm_id(str(filters.get("invoice_id") or "")) != key:
+            return False
     applies = scope.get("applies_to", {})
     for k, v in applies.items():
         if k in filters and str(filters[k]).strip().lower() != str(v).strip().lower():
@@ -43,26 +47,28 @@ def _in_scope(fb: dict, day: date | None, **filters) -> bool:
     return not (day is not None and ((start and day < start) or (end and day > end)))
 
 
-def authorised(w: World, c: Contract, email: str, name: str, category: str, day: date | None) -> bool:
+def authorised(w: World, c: Contract, email: str, name: str, category: str, day: date | None,
+               invoice_id: str | None = None) -> bool:
     if any(_same_person(r, email, name) and category in r.get("categories", []) for r in c.schedule1):
         return True
     for fb in _feedback_items(w, "sender_authority"):
         person = fb["fact"].get("subject", {}).get("person", "")
         cats = fb["fact"].get("value", {}).get("categories", [])
         if category in cats and _same_person({"person": person}, "", name) and \
-                _in_scope(fb, day, contract_id=c.id, person=person, category=category):
+                _in_scope(fb, day, contract_id=c.id, person=person, category=category, invoice_id=invoice_id):
             return True
     return False
 
 
-def authority_learned(w: World, c: Contract, name: str, category: str, day: date | None) -> dict | None:
+def authority_learned(w: World, c: Contract, name: str, category: str, day: date | None,
+                      invoice_id: str | None = None) -> dict | None:
     """The feedback item that granted this authority, when Schedule 1 itself does not."""
     if any(_same_person(r, "", name) and category in r.get("categories", []) for r in c.schedule1):
         return None
     for fb in _feedback_items(w, "sender_authority"):
         person = fb["fact"].get("subject", {}).get("person", "")
         if _same_person({"person": person}, "", name) and _in_scope(fb, day, contract_id=c.id, person=person,
-                                                                    category=category):
+                                                                    category=category, invoice_id=invoice_id):
             return {"feedback_item_id": fb["item_id"], "batch": fb.get("batch", "")}
     return None
 
