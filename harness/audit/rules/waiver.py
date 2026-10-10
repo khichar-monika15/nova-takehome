@@ -19,7 +19,10 @@ def _covered(inv: Invoice, ln: Line, wv: dict, months: list[str] | None = None) 
     same_charge = ln.code == code if code else norm_label(ln.label) == norm_label(wv.get("charge", ""))
     if not same_charge:
         return False
-    if ln.shipment and ln.shipment in (wv.get("shipments") or []):
+    shipments = wv.get("shipments") or []
+    if shipments and months is None:  # a waiver for named shipments covers those shipments only, not their month
+        return bool(ln.shipment) and ln.shipment in shipments
+    if ln.shipment and ln.shipment in shipments:
         return True
     if _month(ln) in (months if months is not None else (wv.get("months") or [])):
         return True

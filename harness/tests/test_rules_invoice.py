@@ -124,6 +124,12 @@ def test_waiver_does_not_cover_another_shipment():
     assert waiver.run(build([msa(), waiver_mail(WES), dlv_invoice("S2", "INV-31")], AS_OF)) == []
 
 
+def test_a_waiver_that_names_a_shipment_and_its_month_does_not_cover_other_shipments_that_month():
+    mail = waiver_mail(WES)
+    mail["facts"]["waivers"][0]["months"] = ["2031-12"]
+    assert waiver.run(build([msa(), mail, dlv_invoice("S2", "INV-31")], AS_OF)) == []
+
+
 def test_waiver_from_someone_without_authority_is_nothing():
     assert waiver.run(build([msa(), waiver_mail(("Kim Key", "kim@carrier.example")), dlv_invoice()], AS_OF)) == []
 
