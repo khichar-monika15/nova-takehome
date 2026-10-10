@@ -204,6 +204,13 @@ def _precedence_choice(w: World, c: Contract, lane: str, pickup: date) -> tuple[
     return None
 
 
+def _signed_after_feedback(w: World, amendment: Doc, learned: dict) -> bool:
+    """GLOSSARY: a later signed document on the same subject beats a feedback fact."""
+    fb = next((f for f in w.feedback if f.get("item_id") == learned.get("feedback_item_id")), {})
+    decided = parse_date((fb.get("decided_at") or "")[:10])
+    return bool(decided) and amendment.received_at.date() > decided
+
+
 def rate(w: World, c: Contract, lane: str, kg: Decimal, pickup: date) -> RateAnswer:
     ans = RateAnswer()
     label = period_label(c, pickup)
@@ -229,7 +236,7 @@ def rate(w: World, c: Contract, lane: str, kg: Decimal, pickup: date) -> RateAns
         if a_min:
             ans.minimum = _rate_of(a_min, None)
     notices = sorted(_notice_rows(w, c, lane, kg, pickup), key=lambda x: x[0])
-    note_value = None
+    note_value, learned = None, None
     if notices:
         _, d, n, nband, nmin, learned = notices[-1]
         note_value = (dec(nband.get("rate")), [e for e in (ev(d, nband), ev(d, n)) if e])
@@ -239,6 +246,10 @@ def rate(w: World, c: Contract, lane: str, kg: Decimal, pickup: date) -> RateAns
             ans.minimum = dec(nmin.get("rate"))
     if amd_value and note_value and amd_value[0] != note_value[0]:
         choice = _precedence_choice(w, c, lane, pickup)
+        by_feedback = choice[1] if choice else learned
+        if by_feedback and _signed_after_feedback(w, amd_rows[-1][2][0], by_feedback):
+            ans.value, ans.evidence, ans.source, ans.learned_at = amd_value[0], amd_value[1], "amendment", None
+            return ans
         if choice:
             pick, learned = choice
             ans.value, ans.evidence = (note_value if pick == "notice" else amd_value)

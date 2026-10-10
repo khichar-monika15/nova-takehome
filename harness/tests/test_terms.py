@@ -17,13 +17,13 @@ def notice(sender, lane="AAA-BBB", start="2032-01-10", end="2032-12-31", rate="3
                  intent="rate_notice", rate_notices=[n])
 
 
-def amendment(rate="2.88", effective="2032-01-01", cites=None, lanes=("AAA-BBB",)):
-    a = msa(received="2032-01-02T09:00:00+00:00", doc_type="amendment", amendment_ref="C-1/AMD-1",
+def amendment(rate="2.88", effective="2032-01-01", cites=None, lanes=("AAA-BBB",), received="2032-01-02", ref="AMD-1"):
+    a = msa(received=f"{received}T09:00:00+00:00", doc_type="amendment", amendment_ref=f"C-1/{ref}",
             effective_date=effective,
             amendment_changes=[{"kind": "rates", "lanes": list(lanes), "effective_from": effective,
                                 "effective_to": None, "all_periods": True, "cites_document": cites,
                                 "cited_document_attached": cites is None, **clause("1. Annex A rates replaced", 1)}])
-    a["ref"] = "batch_01/0002.eml#AMD-1.pdf"
+    a["ref"] = f"batch_01/0002.eml#{ref}.pdf"
     rows = [] if cites else [{"lane": "AAA-BBB", "is_minimum": False, "min_kg": "100", "max_kg": "299.5",
                               "rates": [{"period_label": "all", "rate": rate}], "effective_from": effective,
                               "effective_to": None, **clause(f"AAA-BBB 100-299.5 kg {rate} USD", 1)}]
@@ -87,6 +87,36 @@ def test_feedback_rate_accepted_makes_the_named_notice_count_inside_its_scope():
     got = rate([msa(), notice(KIM)], feedback=fb)
     assert got.value == Decimal("3.03")
     assert got.learned_at == {"feedback_item_id": "fb-1", "batch": "batch_01"}
+
+
+def _feedback(kind, value, decided="2032-02-01"):
+    decision = "resolve_conflict" if kind == "precedence" else "close"
+    return [{"item_id": "fb-1", "batch": "batch_01", "decided_at": decided, "decision": decision,
+             "finding_key": {"invoice_id": "X", "class": "overcharge"},
+             "fact": {"type": kind, "subject": {"contract_id": "C-1", "lane": "AAA-BBB"}, "value": value},
+             "scope": {"kind": "standing", "applies_to": {"contract_id": "C-1", "lane": "AAA-BBB"},
+                       "valid_from": "2032-01-10", "valid_to": None}}]
+
+
+PREFER_NOTICE = {"use": "rate notice"}
+KIM_NOTICE = {"source": "rate notice", "sent_by": "Kim Key", "sent_on": "2032-01-05"}
+LATER_AMD = {"rate": "2.70", "effective": "2032-02-10", "received": "2032-02-15", "ref": "AMD-2"}
+
+
+def test_precedence_feedback_picks_the_notice_over_an_earlier_amendment():
+    got = rate([msa(), amendment(), notice(RAE)], feedback=_feedback("precedence", PREFER_NOTICE))
+    assert got.value == Decimal("3.03") and got.conflict is None
+
+
+def test_a_later_signed_amendment_beats_a_precedence_feedback_fact():
+    got = rate([msa(), amendment(), notice(RAE), amendment(**LATER_AMD)],
+               feedback=_feedback("precedence", PREFER_NOTICE))
+    assert got.value == Decimal("2.70") and got.conflict is None and got.source == "amendment"
+
+
+def test_a_later_signed_amendment_beats_a_rate_accepted_feedback_fact():
+    got = rate([msa(), notice(KIM), amendment(**LATER_AMD)], feedback=_feedback("rate_accepted", KIM_NOTICE))
+    assert got.value == Decimal("2.70") and got.conflict is None and got.source == "amendment"
 
 
 def test_authorised_person_lookup():
