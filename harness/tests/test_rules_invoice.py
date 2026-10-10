@@ -150,3 +150,4 @@ def test_a_misread_lane_is_taken_from_the_waybill_of_the_shipment():
     got = by_key(overcharge.run(w))["INV-1"]
     assert got.amount == Decimal("196.92")
     assert got.features["lane_from_record"] is True
+    assert "AAA-BBB" in got.features["lanes"]

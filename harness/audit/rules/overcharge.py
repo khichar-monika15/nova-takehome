@@ -21,6 +21,7 @@ class Priced:
     missing: dict | None = None
     judgment: bool = False
     lane_from_record: bool = False
+    lane: str | None = None
     learned_at: dict | None = None
 
 
@@ -50,6 +51,7 @@ def _price_group(w: World, inv: Invoice, sid: str | None, lines: list[Line], pic
     sh = w.shipments.get(sid) if sid else None
     kg = _freight_kg(lines, sh)
     lane, out.lane_from_record = _lane(c, next((ln.lane for ln in lines if ln.lane), None), sh)
+    out.lane = lane
     correct_freight: Decimal | None = None
 
     def billed_wrong(ln: Line, correct: Decimal | None, *evidence):
@@ -199,7 +201,7 @@ def audit_invoice(w: World, inv: Invoice) -> Candidate | None:
                      if pickups else "invoice",
                      "judgment": any(p.judgment for p in priced), "inr": inv.currency != "USD",
                      "lane_from_record": any(p.lane_from_record for p in priced),
-                     "lanes": {ln.lane for ln in inv.lines if ln.lane}}
+                     "lanes": {ln.lane for ln in inv.lines if ln.lane} | {p.lane for p in priced if p.lane}}
     base.deciding_refs = [inv.doc.ref]
     if missing:
         base.verdict = "cannot_determine"
