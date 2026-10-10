@@ -44,7 +44,7 @@ def _bedrock_client():
     if _shared_bedrock is None:
         from anthropic import AnthropicBedrockMantle
         _shared_bedrock = AnthropicBedrockMantle(aws_region=os.environ.get("AWS_REGION", "us-east-1"),
-                                                 max_retries=1, timeout=REQUEST_TIMEOUT_S)
+                                                 max_retries=2, timeout=REQUEST_TIMEOUT_S)
     return _shared_bedrock
 
 
@@ -52,7 +52,7 @@ def _client():
     global _shared
     if _shared is None:
         import anthropic
-        _shared = anthropic.Anthropic(max_retries=1, timeout=REQUEST_TIMEOUT_S)
+        _shared = anthropic.Anthropic(max_retries=2, timeout=REQUEST_TIMEOUT_S)
     return _shared
 
 
@@ -60,7 +60,7 @@ def _openai_client():
     global _shared_openai
     if _shared_openai is None:
         import openai
-        _shared_openai = openai.OpenAI(max_retries=1, timeout=REQUEST_TIMEOUT_S)
+        _shared_openai = openai.OpenAI(max_retries=2, timeout=REQUEST_TIMEOUT_S)
     return _shared_openai
 
 

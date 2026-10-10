@@ -53,3 +53,13 @@ def test_load_docs_respects_as_of(monkeypatch, tmp_path):
     early = {d["ref"] for d in state.load_docs(tmp_path, date(2032, 1, 3))}
     assert "batch_01/0003.eml" in early
     assert "batch_01/0004.eml" not in early
+
+
+def test_worker_count_defaults_to_12_and_can_be_lowered_for_local_runs(monkeypatch):
+    import importlib
+    monkeypatch.delenv("NOVA_WORKERS", raising=False)
+    assert importlib.reload(ingest).WORKERS == 12
+    monkeypatch.setenv("NOVA_WORKERS", "3")
+    assert importlib.reload(ingest).WORKERS == 3
+    monkeypatch.delenv("NOVA_WORKERS")
+    importlib.reload(ingest)

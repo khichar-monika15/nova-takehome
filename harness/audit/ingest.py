@@ -1,6 +1,7 @@
 """ingest: read a batch folder and keep every document's facts on disk."""
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
@@ -11,7 +12,7 @@ from .llm import run_parallel
 
 BUDGET_S = 420
 DEADLINE_S = 540
-WORKERS = 8
+WORKERS = int(os.environ.get("NOVA_WORKERS", "12"))  # lower it for a rate-limited local key
 
 
 def _record(doc: Doc, source: Path, result: dict) -> dict:
