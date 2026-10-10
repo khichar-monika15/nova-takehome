@@ -81,3 +81,11 @@ def test_inr_credit_note_without_a_date_does_not_crash_cashback():
                  doc_type="credit_note", credit={"credits_invoice": None, "period": "2033-Q2", "credit_type": "rebate"})
     records = [rebate_msa(), spend("Q2-1", "2033-04-10", "70000.00"), cn]
     assert [c.period for c in cashback.run(build(records, date(2033, 11, 30)))] == ["2033-Q2"]
+
+
+def test_cannot_determine_with_no_holder_is_not_a_known_recipient():
+    from audit import report
+    from audit.rules import Candidate
+    c = Candidate(cls="waived_but_billed", verdict="cannot_determine", invoice_id="X-1",
+                  missing_doc={"name": "original waiver email", "holder": None})
+    assert report._recipient_known(None, c) is False

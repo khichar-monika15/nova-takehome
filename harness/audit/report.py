@@ -67,7 +67,7 @@ def _candidates(w: World) -> list[Candidate]:
 def _recipient_known(w: World, c: Candidate) -> bool:
     """Unattended check 5: the outbound action has a recipient that Schedule 1 names."""
     if c.verdict == "cannot_determine":
-        return bool((c.missing_doc or {}).get("holder", {}).get("person"))
+        return bool(((c.missing_doc or {}).get("holder") or {}).get("person"))
     contract = w.contracts.get((c.contract_id or "").upper())
     if contract is None:
         return False
