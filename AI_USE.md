@@ -8,7 +8,7 @@ OpenAI `gpt-5.5` and `gpt-5.4-mini`, and Claude Opus 5.5 through Amazon Bedrock,
 
 ## How you worked with them
 
-The person in the session gave the goal and made the decisions. The person chose the 48-hour deadline and the approach "the model reads, code decides". The person also chose OpenAI and then Bedrock for local runs, and this GitHub account. Claude asked before each of these decisions, and the log shows the questions and the answers.
+Monika directed this work and made all the decisions. She chose the 48-hour deadline and the approach "the model reads, code decides". She also chose OpenAI and then Bedrock for local runs, and this GitHub account. Claude asked before each of these decisions, and the log shows the questions and the answers.
 
 Checks did not rely on reading the code. The grader's own tools scored the work. A blind subagent built the exam answer key with its own scripts, without seeing the code. The answer sheet of the program matched it on 9 of 9 rows. Every rule has a unit test that failed before the code existed.
 
@@ -24,7 +24,7 @@ The AI got these things wrong, and the log shows each fix:
 
 ## Written without AI
 
-No code, test or document in this repository was written without AI. The decisions in the section above came from the person in the session.
+No code, test or document in this repository was written without AI. The decisions in the section above came from Monika.
 
 ## Prompt log
 
