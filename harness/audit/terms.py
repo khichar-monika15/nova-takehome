@@ -1,6 +1,7 @@
 """Stage 2b: which term is in force on a pickup date, from which source, and who holds a missing document."""
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -143,7 +144,27 @@ def _amendment_effective(a: Doc) -> date | None:
     return parse_date(a.facts.get("terms", {}).get("effective_date"))
 
 
-def _signed_amendment_answers(c: Contract, lane: str, kg: Decimal, pickup: date):
+def _alnum(s) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(s or "").lower())
+
+
+def _cited_document(w: World, citing: Doc, change: dict, lane: str) -> Doc | None:
+    """The document an amendment cites but did not attach, once a later batch brings it: a contract document whose
+    reference or first page names it and that has rate rows for the lane."""
+    want = _alnum(change.get("cites_document"))
+    if len(want) < 4:
+        return None
+    for d in w.docs:
+        if d.kind != "contract" or d is citing:
+            continue
+        if not any(r.get("lane") == lane for r in d.facts.get("rates", {}).get("rows", [])):
+            continue
+        if any(want in _alnum(t) for t in (d.ref, (d.pages or [""])[0][:600])):
+            return d
+    return None
+
+
+def _signed_amendment_answers(w: World, c: Contract, lane: str, kg: Decimal, pickup: date):
     """[(effective_from, kind, payload)] for each amendment change on this lane in force on the pickup date."""
     out = []
     for a in c.amendments:
@@ -162,7 +183,8 @@ def _signed_amendment_answers(c: Contract, lane: str, kg: Decimal, pickup: date)
                 start = parse_date(ch.get("effective_from")) or _amendment_effective(a)
                 end = parse_date(ch.get("effective_to"))
                 if start and start <= pickup and (end is None or pickup <= end):
-                    out.append((start, "missing", (a, ch)))
+                    cited = _cited_document(w, a, ch, lane)
+                    out.append((start, "rate", (cited, None)) if cited else (start, "missing", (a, ch)))
     return out
 
 
@@ -225,7 +247,7 @@ def rate(w: World, c: Contract, lane: str, kg: Decimal, pickup: date) -> RateAns
         ans.value, ans.minimum = _rate_of(band, label), _rate_of(minimum, label)
         ans.evidence = [e for e in (ev(c.msa, band), ev(c.msa, (c.terms.get("rules") or {}).get("pricing_date")))
                         if e]
-    amended = sorted(_signed_amendment_answers(c, lane, kg, pickup), key=lambda x: x[0])
+    amended = sorted(_signed_amendment_answers(w, c, lane, kg, pickup), key=lambda x: x[0])
     if amended and amended[-1][1] == "missing":
         a, change = amended[-1][2]
         ans.missing_doc = {"name": change["cites_document"], "holder": contact(c, "rates") or key_account_manager(c)}

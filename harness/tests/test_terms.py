@@ -76,6 +76,26 @@ def test_missing_cited_attachment_gives_missing_doc_with_rates_holder():
                                                                    "role": "Pricing Manager"}}
 
 
+def annex(name, rate="2.50"):
+    a = msa(received="2032-02-20T09:00:00+00:00", doc_type="other_agreement", signed_by_both=False)
+    a["ref"], a["name"] = f"batch_02/0009.eml#{name}", name
+    a["facts"]["rates"] = {"currency": "USD", "periods": [], "rows": [
+        {"lane": "AAA-BBB", "is_minimum": False, "min_kg": "100", "max_kg": "299.5",
+         "rates": [{"period_label": "all", "rate": rate}], "effective_from": "", "effective_to": "",
+         **clause(f"AAA-BBB 100-299.5 kg {rate} USD", 1)}]}
+    return a
+
+
+def test_the_cited_annex_arriving_later_replaces_the_missing_document():
+    got = rate([msa(), amendment(cites="Annex A rev 2"), annex("C-1-Annex-A-rev-2.pdf")])
+    assert got.missing_doc is None and got.value == Decimal("2.50")
+
+
+def test_an_unrelated_contract_document_does_not_count_as_the_cited_annex():
+    got = rate([msa(), amendment(cites="Annex A rev 2"), annex("C-1-Annex-D.pdf")])
+    assert got.missing_doc is not None
+
+
 def test_feedback_rate_accepted_makes_the_named_notice_count_inside_its_scope():
     fb = [{"item_id": "fb-1", "batch": "batch_01", "decision": "close",
            "finding_key": {"invoice_id": "X", "class": "overcharge"},
