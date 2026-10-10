@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import json
-from decimal import Decimal
+import sys
 from pathlib import Path
 
 from . import state
 from .rules import Candidate
-from .world import norm_id
+from .world import dec, norm_id
 
 
 def _path(state_dir) -> Path:
@@ -42,16 +42,20 @@ def apply(cands: list[Candidate], items: list[dict]) -> list[Candidate]:
     for c in cands:
         keep = True
         for fb in items:
-            if not matches(c, fb.get("finding_key", {})):
-                continue
-            decision = fb.get("decision")
-            if decision in ("close", "reject"):
-                keep = False
-            elif decision == "override_amount":
-                amount = fb.get("fact", {}).get("value", {}).get("amount_usd")
-                if amount is not None:
-                    c.amount = Decimal(str(amount))
-                    c.learned_at = {"feedback_item_id": fb["item_id"], "batch": fb.get("batch", "")}
+            try:
+                if not matches(c, fb.get("finding_key") or {}):
+                    continue
+                decision = fb.get("decision")
+                if decision in ("close", "reject"):
+                    keep = False
+                elif decision == "override_amount":
+                    amount = dec(((fb.get("fact") or {}).get("value") or {}).get("amount_usd"))
+                    if amount is not None:
+                        c.amount = amount
+                        c.learned_at = {"feedback_item_id": fb["item_id"], "batch": fb.get("batch", "")}
+            except (AttributeError, KeyError, TypeError) as e:
+                print(f"feedback: skipped malformed item {fb.get('item_id') if isinstance(fb, dict) else fb}: {e}",
+                      file=sys.stderr)
         if keep:
             out.append(c)
     return out

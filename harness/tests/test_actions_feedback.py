@@ -173,3 +173,14 @@ def test_report_marks_whether_schedule_1_names_the_dispute_recipient():
         row["categories"] = [x for x in row["categories"] if x != "billing_disputes"]
     w = build([base, oc_invoice(), tracking([("S1", "picked_up", "2031-12-25", "AAA")])], AS_OF)
     assert [c.features["recipient"] for c in _candidates(w)] == [False]
+
+
+def test_a_malformed_feedback_item_is_skipped():
+    c = Candidate(cls="overcharge", verdict="finding", invoice_id="INV-1", amount=Decimal("10.00"))
+    items = [{"item_id": "fb-x", "decision": "override_amount", "finding_key": {"invoice_id": "INV-1",
+                                                                                "class": "overcharge"}, "fact": None},
+             {"item_id": "fb-y", "decision": "override_amount", "finding_key": {"invoice_id": "INV-1",
+                                                                                "class": "overcharge"},
+              "fact": {"value": {"amount_usd": "USD 212.40"}}}]
+    out = feedback.apply([c], items)
+    assert len(out) == 1 and out[0].amount in (Decimal("10.00"), Decimal("212.40"))

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import re
+import sys
+import traceback
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -374,8 +376,20 @@ def _add_dgd(w: World, d: Doc) -> None:
 ORDER = ("contract", "email", "table", "awb", "dgd", "invoice")
 
 
+def _docs(records: list[dict]) -> list[Doc]:
+    out = []
+    for r in records:
+        if not r.get("ok"):
+            continue
+        try:
+            out.append(Doc.of(r))
+        except Exception:  # noqa: BLE001  one document with odd facts must not empty the report
+            print(f"world: skipped {r.get('ref')}:\n{traceback.format_exc()}", file=sys.stderr)
+    return out
+
+
 def build(records: list[dict], as_of: date, feedback: list[dict] | None = None) -> World:
-    docs = sorted((Doc.of(r) for r in records if r.get("ok")), key=lambda d: (d.received_at, d.ref))
+    docs = sorted(_docs(records), key=lambda d: (d.received_at, d.ref))
     w = World(as_of=as_of, docs=docs, contracts={}, invoices={}, credit_notes=[], shipments={}, ledger={},
               emails=[], feedback=feedback or [])
     add = {"contract": _add_contract, "email": _add_email, "table": _add_table, "awb": _add_awb, "dgd": _add_dgd,
@@ -383,5 +397,8 @@ def build(records: list[dict], as_of: date, feedback: list[dict] | None = None) 
     for kind in ORDER:
         for d in docs:
             if d.kind == kind:
-                add[kind](w, d)
+                try:
+                    add[kind](w, d)
+                except Exception:  # noqa: BLE001  one document with odd facts must not empty the report
+                    print(f"world: skipped {d.ref}:\n{traceback.format_exc()}", file=sys.stderr)
     return w

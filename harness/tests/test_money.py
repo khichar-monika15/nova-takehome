@@ -32,3 +32,7 @@ def test_parse_date_formats():
 def test_ceil_div():
     assert ceil_div(31, 30) == 2
     assert ceil_div(30, 30) == 1
+
+
+def test_an_impossible_iso_date_is_no_date():
+    assert parse_date("2040-02-30") is None

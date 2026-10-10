@@ -83,3 +83,12 @@ def test_a_line_whose_label_is_not_in_annex_e_takes_the_kind_the_model_read():
     item["kind"] = "freight"
     got = build([msa(), invoice("INV-L", "2032-01-02", [item])], AS_OF).invoices["INV-L"][0].lines[0]
     assert (got.kind, got.code) == ("freight", "FRT")
+
+
+def test_one_document_with_odd_facts_is_skipped_and_the_rest_still_build():
+    odd = invoice("INV-ODD", "2032-01-02", [])
+    odd["facts"]["lines"] = None
+    good = invoice("INV-1", "2032-01-02", [line("S1", "2031-12-20", "Air freight", "AAA-BBB", "241", "kg", "6.69",
+                                                "1612.29")])
+    w = build([msa(), odd, good], AS_OF)
+    assert "INV-1" in {k.upper() for k in w.invoices}
