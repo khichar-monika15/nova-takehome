@@ -19,6 +19,7 @@ The AI got these things wrong, and the log shows each fix:
 - A failed model call was saved as a finished document of type "other". In one run, this lost the AP register. Failed documents now stay open and get a second try.
 - One test expected the wrong normalized invoice id, and one test used a label that its own fixture did not hold.
 - The brief to the eval subagent said a one-off waiver made the next month a finding. The subagent followed GLOSSARY.md instead, which says the opposite, and that was right.
+- The two final reviewers found defects that the tests had missed. Examples are a later amendment that did not beat a feedback fact, and a one-off fact that acted as standing. Each fix has a test that failed first.
 - The first log export kept 8 characters of a key, because they were part of a search command. The exporter now removes any piece of a local key file.
 
 ## Written without AI
