@@ -2,7 +2,7 @@
 
 ## Tools
 
-Claude Code (the Anthropic command-line agent) with the model `claude-opus-5-5` did almost all the work in one session. It read the brief and the grader code, made the plan, wrote the code and the tests, and drafted the documents. Five subagents of the same model did separate jobs. Two studied the grader and the data, and one checked current practice on the web. One built a blind answer key for the exam mailbox by hand, and one wrote the new eval mailboxes. The session used the Superpowers skills for its process: brainstorming, plan writing, plan execution, test-driven development and systematic debugging. OpenAI `gpt-5.5` and `gpt-5.4-mini` were not coding tools. They were the model inside the program for the local runs, because no Anthropic key was available.
+Claude Code (the Anthropic command-line agent) with the model `claude-opus-5-5` did almost all the work in one session. It read the brief and the grader code, made the plan, wrote the code and the tests, and drafted the documents. Five subagents of the same model did separate jobs. Two studied the grader and the data, and one checked current practice on the web. One built a blind answer key for the exam mailbox by hand, and one wrote the new eval mailboxes. The session used the Superpowers skills for its process: brainstorming, plan writing, plan execution, test-driven development and systematic debugging. OpenAI `gpt-5.5` and `gpt-5.4-mini`, and Claude Opus 5.5 through Amazon Bedrock, were not coding tools. They were the models inside the program for the local runs, because no Anthropic API key was available.
 
 ## How you worked with them
 
