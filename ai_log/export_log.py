@@ -7,13 +7,27 @@ import re
 import sys
 from pathlib import Path
 
-KEY = re.compile(r"sk-(?:proj|ant|live|admin)[A-Za-z0-9_\-]{8,}")
+KEY = re.compile(r"sk-(?:proj|ant|live|admin)[A-Za-z0-9_\-]{8,}|bedrock-api-key-[A-Za-z0-9+/=%]{20,}")
 RESULT_CHARS = 1500
 INPUT_CHARS = 2500
 
 
+def _local_keys() -> list[str]:
+    """Key files on the machine that runs the export (never in the repository)."""
+    folder = Path.home() / ".config" / "nova"
+    return [p.read_text().strip() for p in folder.glob("*_key")] if folder.is_dir() else []
+
+
+LOCAL_KEYS = _local_keys()
+
+
 def scrub(s: str) -> str:
-    return KEY.sub("[API KEY REMOVED]", s)
+    s = KEY.sub("[API KEY REMOVED]", s)
+    for k in LOCAL_KEYS:  # also any piece of 8 or more characters of a key, such as a search for one
+        for i in range(len(k) - 7):
+            if k[i:i + 8] in s:
+                s = s.replace(k[i:i + 8], "[KEY PART REMOVED]")
+    return s
 
 
 def clip(s: str, n: int) -> str:
