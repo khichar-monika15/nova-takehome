@@ -18,6 +18,7 @@ MODEL = "claude-opus-5-5"
 FALLBACK_MODEL = "claude-sonnet-5-5"
 SMALL_MODEL = "claude-haiku-5-5"
 REQUEST_TIMEOUT_S = 240
+MAX_RETRIES = 2
 MIN_CALL_S = 30
 OPENAI_MODELS = {MODEL: "gpt-5.5", FALLBACK_MODEL: "gpt-5.5", SMALL_MODEL: "gpt-5.4-mini"}
 BEDROCK_MODELS = {MODEL: "anthropic.claude-opus-5-5", FALLBACK_MODEL: "anthropic.claude-opus-5-5",
@@ -44,7 +45,7 @@ def _bedrock_client():
     if _shared_bedrock is None:
         from anthropic import AnthropicBedrockMantle
         _shared_bedrock = AnthropicBedrockMantle(aws_region=os.environ.get("AWS_REGION", "us-east-1"),
-                                                 max_retries=2, timeout=REQUEST_TIMEOUT_S)
+                                                 max_retries=MAX_RETRIES, timeout=REQUEST_TIMEOUT_S)
     return _shared_bedrock
 
 
@@ -52,7 +53,7 @@ def _client():
     global _shared
     if _shared is None:
         import anthropic
-        _shared = anthropic.Anthropic(max_retries=2, timeout=REQUEST_TIMEOUT_S)
+        _shared = anthropic.Anthropic(max_retries=MAX_RETRIES, timeout=REQUEST_TIMEOUT_S)
     return _shared
 
 
@@ -60,7 +61,7 @@ def _openai_client():
     global _shared_openai
     if _shared_openai is None:
         import openai
-        _shared_openai = openai.OpenAI(max_retries=2, timeout=REQUEST_TIMEOUT_S)
+        _shared_openai = openai.OpenAI(max_retries=MAX_RETRIES, timeout=REQUEST_TIMEOUT_S)
     return _shared_openai
 
 
@@ -192,7 +193,8 @@ def call_json(task: str, system: str, content: list, schema: dict, *, state_dir:
         if left is not None and left < MIN_CALL_S:
             print(f"llm {task}: skipped, {left:.0f} s left before the command deadline", file=sys.stderr)
             break
-        timeout = min(REQUEST_TIMEOUT_S, left - 5) if left is not None else None
+        # the SDK retries a timed-out attempt with the same timeout, so every attempt must fit before the deadline
+        timeout = min(REQUEST_TIMEOUT_S, (left - 5) / (MAX_RETRIES + 1)) if left is not None else None
         try:
             value = ask(m, system, content, schema, max_tokens, effort, task, state_dir, timeout)
         except Exception as e:  # noqa: BLE001  the SDK already retried; one failed document must not stop the batch

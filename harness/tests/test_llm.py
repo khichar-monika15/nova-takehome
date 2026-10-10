@@ -207,3 +207,15 @@ def test_a_call_on_the_mid_model_falls_back_to_opus_last(monkeypatch, tmp_path):
     assert llm.call_json("classify", "sys", [{"type": "text", "text": "c"}], SCHEMA, state_dir=tmp_path,
                          model=llm.FALLBACK_MODEL) == {"a": 6}
     assert [c["model"] for c in fake.calls] == [llm.FALLBACK_MODEL, llm.MODEL]
+
+
+def test_every_retry_of_a_call_fits_before_the_deadline(monkeypatch, tmp_path):
+    class TimedClient(FakeClient):
+        def with_options(self, **kw):
+            self.options = kw
+            return self
+    fake = TimedClient([("end_turn", '{"a": 1}')])
+    use(monkeypatch, fake)
+    llm.call_json("t", "sys", [{"type": "text", "text": "x"}], SCHEMA, state_dir=tmp_path,
+                  deadline=time.monotonic() + 305)
+    assert fake.options["timeout"] * (llm.MAX_RETRIES + 1) <= 305
