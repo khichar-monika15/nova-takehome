@@ -16,7 +16,7 @@
     {
      "doc": "batch_01/0017.eml",
      "page": 1,
-     "quote": "Our records show invoice CDU-3051273 as outstanding.\nPlease process payment at your earliest convenience."
+     "quote": "Our records show invoice CDU-3051273 as outstanding."
     },
     {
      "doc": "batch_02/0023.eml#ap-register-2031-02-28.xlsx",
@@ -118,7 +118,7 @@
     {
      "doc": "batch_01/0001.eml#MSA-CDA-IN-EXP-E91.pdf",
      "page": 3,
-     "quote": "4.1 Fuel surcharge. Fuel surcharge is the Annex C percentage for the month of the Pickup Date, applied to the base freight\ncharge only. It does not apply to Annex D accessorials or the security surcharge."
+     "quote": "4.1 Fuel surcharge. Fuel surcharge is the Annex C percentage for the month of the Pickup Date, applied to the base freight"
     },
     {
      "doc": "batch_02/0022.eml#tracking-2030-09-01.xlsx",
@@ -174,7 +174,7 @@
     {
      "doc": "batch_01/0003.eml#MSA-CDA-US-EXP-E91.pdf",
      "page": 3,
-     "quote": "4.1 Fuel surcharge. Fuel surcharge is the Annex C percentage for the month of the Pickup Date, applied to the base freight\ncharge only."
+     "quote": "4.1 Fuel surcharge. Fuel surcharge is the Annex C percentage for the month of the Pickup Date, applied to the base freight\ncharge only. It does not apply to Annex D accessorials or the security surcharge."
     },
     {
      "doc": "batch_01/0016.eml#tracking-2030-01-01.xlsx",
@@ -200,7 +200,7 @@
     {
      "doc": "batch_01/0004.eml#CDA-US-EXP-E91-AMD-1.pdf",
      "page": 1,
-     "quote": "2. The Annex A rates for lane(s) USW2-USW1 are deleted and replaced as follows: Annex A rev 2 (attached) applies from\n2030-09-07 to lane(s) USW2-USW1."
+     "quote": "2. The Annex A rates for lane(s) USW2-USW1 are deleted and replaced as follows: Annex A rev 2 (attached) applies from"
     },
     {
      "doc": "batch_02/0003.eml#CDU-3051286.pdf",
@@ -328,7 +328,7 @@
     {
      "doc": "batch_01/0007.eml",
      "page": 1,
-     "quote": "Please treat the Delivery fee on AWB CA10343321 as waived.\nWe will not pursue payment of that line."
+     "quote": "Please treat the Delivery fee on AWB CA10343321 as waived."
     },
     {
      "doc": "batch_01/0003.eml#MSA-CDA-US-EXP-E91.pdf",
@@ -338,7 +338,7 @@
     {
      "doc": "batch_01/0003.eml#MSA-CDA-US-EXP-E91.pdf",
      "page": 4,
-     "quote": "11.1 Waiver authority. A charge may be waived only in writing by a person listed in Schedule 1 for waivers."
+     "quote": "11.1 Waiver authority. A charge may be waived only in writing by a person listed in Schedule 1 for waivers. Schedule 1 is\nexhaustive."
     }
    ],
    "missing_doc": null,
@@ -364,7 +364,7 @@
     {
      "doc": "batch_02/0009.eml",
      "page": 1,
-     "quote": "The Delivery fee billed against AWB CA75329761 is waived, with our apologies.\nKindly deduct it when you pay."
+     "quote": "The Delivery fee billed against AWB CA75329761 is waived, with our apologies."
     },
     {
      "doc": "batch_01/0003.eml#MSA-CDA-US-EXP-E91.pdf",
@@ -374,7 +374,7 @@
     {
      "doc": "batch_01/0003.eml#MSA-CDA-US-EXP-E91.pdf",
      "page": 4,
-     "quote": "11.1 Waiver authority. A charge may be waived only in writing by a person listed in Schedule 1 for waivers."
+     "quote": "11.1 Waiver authority. A charge may be waived only in writing by a person listed in Schedule 1 for waivers. Schedule 1 is\nexhaustive."
     }
    ],
    "missing_doc": null,
@@ -398,12 +398,12 @@
      {
       "doc": "batch_01/0003.eml#MSA-CDA-US-EXP-E91.pdf",
       "page": 4,
-      "quote": "7.1 Volume rebate. The Carrier shall credit a rebate on each Quarter's Qualifying Spend (QS) at the tier reached: QS >= USD\n77,000.00: 5%; QS >= USD 132,000.00: 7.5%; QS >= USD 208,000.00: 10%. The tier rate applies to all QS in the Quarter."
+      "quote": "7.1 Volume rebate. The Carrier shall credit a rebate on each Quarter's Qualifying Spend (QS) at the tier reached: QS >= USD"
      },
      {
       "doc": "batch_01/0003.eml#MSA-CDA-US-EXP-E91.pdf",
       "page": 3,
-      "quote": "1.1 Qualifying Spend. Qualifying Spend means freight charges (base freight, fuel, security surcharge and Annex D\naccessorials) on invoices dated in the period, net of all credit notes dated in the period whatever invoice they reference (rebate\nand improvement credits excepted). It excludes taxes (sales tax, GST), duties and disbursements, late fees, and rebate or"
+      "quote": "1.1 Qualifying Spend. Qualifying Spend means freight charges (base freight, fuel, security surcharge and Annex D"
      }
     ],
     "missing_doc": null,
