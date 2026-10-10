@@ -1,0 +1,11 @@
+name: feedback rejects the overcharge key, so the report drops it
+mailbox: evals/mailboxes/overcharge_band
+as_of: "2041-03-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/overcharge_reject.json}
+expect:
+  key: {invoice_id: VCU-4103-0217, class: overcharge}
+  verdict: no_finding
+why: >-
+  The feedback item fb-vb-11 is a reject for this key. GLOSSARY says that key is not a finding, so the report drops
+  it.

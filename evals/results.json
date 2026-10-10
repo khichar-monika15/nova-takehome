@@ -1,8 +1,8 @@
 {
  "harness": "harness/harness.py",
- "passed": 21,
- "total": 21,
- "your_cases": 19,
+ "passed": 26,
+ "total": 26,
+ "your_cases": 24,
  "score": 1.0,
  "cases": [
   {
@@ -56,6 +56,36 @@
   {
    "case": "vb_feedback_authority_rate_notice.yaml",
    "name": "waiver authority from feedback does not cover a rate notice from the same person",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_close_overcharge.yaml",
+   "name": "feedback closes the overcharge key, so the report stops raising it",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_one_off_authority_not_wider.yaml",
+   "name": "one-off authority feedback does not cover his later waiver on another statement",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_one_off_authority_own_key.yaml",
+   "name": "one-off authority feedback turns its own waiver key into a finding",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_override_amount.yaml",
+   "name": "feedback overrides the amount of the overcharge key",
+   "pass": true,
+   "diff": []
+  },
+  {
+   "case": "vb_feedback_reject_overcharge.yaml",
+   "name": "feedback rejects the overcharge key, so the report drops it",
    "pass": true,
    "diff": []
   },

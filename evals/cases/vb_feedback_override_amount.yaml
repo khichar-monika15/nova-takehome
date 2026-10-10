@@ -1,0 +1,13 @@
+name: feedback overrides the amount of the overcharge key
+mailbox: evals/mailboxes/overcharge_band
+as_of: "2041-03-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/overcharge_override.json}
+expect:
+  key: {invoice_id: VCU-4103-0217, class: overcharge}
+  verdict: finding
+  amount_usd: "150.00"
+  action: draft:dispute
+why: >-
+  The computed overcharge is 206.38. The feedback item fb-vb-12 is override_amount with amount_usd 150.00, so the key
+  stays a finding at 150.00 and carries learned_at.

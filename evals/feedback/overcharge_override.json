@@ -1,0 +1,41 @@
+{
+ "schema_version": "1.0",
+ "world": "EVAL-VB",
+ "after_batch": "batch_01",
+ "decided_at": "2041-03-30T09:30:00Z",
+ "decided_by": {
+  "name": "Dashiell Moreau",
+  "role": "Head of Payables",
+  "entity": "BRK-US"
+ },
+ "items": [
+  {
+   "item_id": "fb-vb-12",
+   "finding_key": {
+    "invoice_id": "VCU-4103-0217",
+    "class": "overcharge"
+   },
+   "solicited": true,
+   "decision": "override_amount",
+   "fact": {
+    "type": "dispute_closed",
+    "subject": {
+     "invoice_id": "VCU-4103-0217"
+    },
+    "value": {
+     "status": "settled",
+     "amount_usd": "150.00"
+    },
+    "evidence": "Settled with the carrier at 150.00"
+   },
+   "scope": {
+    "kind": "one_off",
+    "applies_to": {
+     "invoice_id": "VCU-4103-0217"
+    },
+    "valid_from": "2041-03-30",
+    "valid_to": null
+   }
+  }
+ ]
+}

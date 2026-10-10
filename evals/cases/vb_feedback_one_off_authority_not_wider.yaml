@@ -1,0 +1,12 @@
+name: one-off authority feedback does not cover his later waiver on another statement
+mailbox: evals/mailboxes/feedback_waiver_authority
+as_of: "2041-08-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/sender_authority_waivers_one_off.json}
+expect:
+  key: {invoice_id: VCU-4108-0377, class: waived_but_billed}
+  verdict: no_finding
+why: >-
+  The one-off feedback covers VCU-4107-0350 only. Fergus Oyelowo still has no Schedule 1 waiver authority, so his
+  later waiver on VCU-4108-0377 changes nothing. Treating the one-off as standing would make this key a finding,
+  which is one of the five mistakes that cap the score.

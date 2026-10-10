@@ -1,0 +1,12 @@
+name: feedback closes the overcharge key, so the report stops raising it
+mailbox: evals/mailboxes/overcharge_band
+as_of: "2041-03-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/overcharge_close.json}
+expect:
+  key: {invoice_id: VCU-4103-0217, class: overcharge}
+  verdict: no_finding
+why: >-
+  Same statement as the wrong band case, an overcharge of 206.38. The feedback item fb-vb-10 is a close with
+  dispute_closed for this key: the carrier settled it. GLOSSARY says close stops that key only, so the report must
+  not raise VCU-4103-0217 again.

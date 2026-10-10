@@ -1,0 +1,13 @@
+name: one-off authority feedback turns its own waiver key into a finding
+mailbox: evals/mailboxes/feedback_waiver_authority
+as_of: "2041-08-31"
+mode: supervised
+feedback: {batch_01: evals/feedback/sender_authority_waivers_one_off.json}
+expect:
+  key: {invoice_id: VCU-4107-0350, class: waived_but_billed}
+  verdict: finding
+  amount_usd: "74.50"
+  action: draft:dispute
+why: >-
+  Same mailbox as the standing authority cases. Here the feedback grants Fergus Oyelowo authority as a one-off for
+  VCU-4107-0350 only. That key becomes a finding of 74.50 for the Door delivery charge he waived.
